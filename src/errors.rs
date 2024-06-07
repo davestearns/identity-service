@@ -1,15 +1,11 @@
-use core::fmt;
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-};
+use std::{error::Error, fmt::{Debug, Display}};
 
 pub enum StartupError {
     InvalidTraceLevel(String),
     AddrNotSet,
 }
 
-impl Debug for StartupError {
+impl Display for StartupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let message = match self {
             Self::InvalidTraceLevel(trace_level) => format!( "The TRACE_LEVEL environment variable '{}' \
@@ -26,9 +22,9 @@ impl Debug for StartupError {
     }
 }
 
-impl Display for StartupError {
+impl Debug for StartupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fmt::Debug::fmt(&self, f)
+        Display::fmt(&self, f)
     }
 }
 
