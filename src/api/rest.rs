@@ -1,3 +1,5 @@
+//! Implementation of the service's RESTy API.
+
 use axum::{routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
