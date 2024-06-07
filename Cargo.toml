@@ -11,3 +11,4 @@ axum = { version = "0.7.5", features= ["http2"] }
 dotenvy = "0.15.7"
 tracing-subscriber = "0.3.18"
 tracing = "0.1.40"
+tracing-core = "0.1.32"

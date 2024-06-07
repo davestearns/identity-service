@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // initialize tracing output
     let env_trace_level = env::var("TRACE_LEVEL").unwrap_or(tracing::Level::DEBUG.to_string());
     let trace_level = tracing::Level::from_str(&env_trace_level)
-        .map_err(|_| StartupError::InvalidTraceLevel(env_trace_level))?;
+        .map_err(|err| StartupError::InvalidTraceLevel(env_trace_level, err))?;
 
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
