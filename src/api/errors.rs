@@ -18,11 +18,11 @@ struct ApiErrorResponse {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
-        let status = match self {
-            Self::NotYetImplemented => StatusCode::NOT_IMPLEMENTED,
-        };
-        let message = match self {
-            Self::NotYetImplemented => "Not yet implemented".to_string(),
+        let (status, message) = match self {
+            Self::NotYetImplemented => (
+                StatusCode::NOT_IMPLEMENTED,
+                "Not yet implemented".to_string(),
+            ),
         };
         let body = Json(ApiErrorResponse {
             message,
