@@ -1,25 +1,39 @@
 //! Implementation of the service's RESTy API.
 
+use std::sync::Arc;
+
 use axum::{
-    extract::Json,
+    extract::{Json, State},
     routing::{get, post},
     Router,
 };
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
-use crate::api::models::{Account, NewAccount};
+use crate::{
+    api::models::{Account, NewAccount},
+    services::accounts::AccountsService,
+};
 
 use super::errors::ApiError;
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
 
+struct AppState {
+    accounts_service: Box<dyn AccountsService>,
+}
+
 /// Returns the Axum Router for the REST API
-pub fn router() -> Router {
+pub fn router(accounts_service: impl AccountsService + 'static) -> Router {
+    let shared_state = Arc::new(AppState {
+        accounts_service: Box::new(accounts_service),
+    });
+
     Router::new()
         .route("/", get(get_root))
         .route("/accounts", post(post_account))
+        .with_state(shared_state)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
 }
 
@@ -27,7 +41,10 @@ async fn get_root() -> &'static str {
     ROOT_RESPONSE
 }
 
-async fn post_account(Json(_new_account): Json<NewAccount>) -> Result<Json<Account>, ApiError> {
+async fn post_account(
+    State(app_state): State<Arc<AppState>>,
+    Json(new_account): Json<NewAccount>,
+) -> Result<Json<Account>, ApiError> {
     Err(ApiError::NotYetImplemented)
 }
 
@@ -40,12 +57,19 @@ mod tests {
     use http_body_util::BodyExt;
     use tower::ServiceExt;
 
+    use crate::services::accounts::AccountsServiceImpl;
+
     use super::*;
+
+    fn get_router() -> Router {
+        let accounts_service = AccountsServiceImpl::new();
+        router(accounts_service)
+    }
 
     #[tokio::test]
     async fn root_returns_correct_response() {
         let request = Request::get("/").body(Body::empty()).unwrap();
-        let response = router().oneshot(request).await.unwrap();
+        let response = get_router().oneshot(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
 
@@ -56,7 +80,7 @@ mod tests {
     #[tokio::test]
     async fn invalid_route_returns_not_found() {
         let request = Request::get("/invalid").body(Body::empty()).unwrap();
-        let response = router().oneshot(request).await.unwrap();
+        let response = get_router().oneshot(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
@@ -73,7 +97,7 @@ mod tests {
             .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
             .body(Body::from(serde_json::to_vec(&new_account).unwrap()))
             .unwrap();
-        let response = router().oneshot(request).await.unwrap();
+        let response = get_router().oneshot(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
     }

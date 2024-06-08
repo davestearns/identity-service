@@ -24,11 +24,11 @@ impl IntoResponse for ApiError {
                 "Not yet implemented".to_string(),
             ),
         };
-        let body = Json(ApiErrorResponse {
+        let body = ApiErrorResponse {
             message,
             status: status.as_u16(),
-        });
+        };
 
-        (status, body).into_response()
+        (status, Json(body)).into_response()
     }
 }
