@@ -1,7 +1,7 @@
 //! This package defines common models used by more than one of the API implementations.
 //! For example, both the REST and WebSocket APIs would use the same [NewAccount] model
 //! for account creation requests, and the same [Account] model for responses.
-//! 
+//!
 //! Although these models are very similar (or identical) to those defined in the
 //! AccountsService, they are distinct so that the API shape can evolve separately
 //! from the internal service logic. For example, we may need to change the definition
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents a new account signup.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct NewAccount {
+pub struct NewAccountRequest {
     /// Account email address.
     pub email: String,
     /// Account password.
@@ -23,7 +23,7 @@ pub struct NewAccount {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Account {
+pub struct AccountResponse {
     /// Unique ID
     pub id: String,
     /// Account email address.

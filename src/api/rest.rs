@@ -11,8 +11,8 @@ use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
 use crate::{
-    api::models::{Account, NewAccount},
-    services::accounts::{AccountsService, AccountsServiceError},
+    api::models::{AccountResponse, NewAccountRequest},
+    services::accounts::{Account, AccountsService, AccountsServiceError, NewAccount},
 };
 
 use super::errors::ApiError;
@@ -31,9 +31,9 @@ impl From<AccountsServiceError> for ApiError {
     }
 }
 
-/// Converts the API [NewAccount] model to the corresponding model for the [AccountsService]
-impl From<NewAccount> for crate::services::accounts::NewAccount {
-    fn from(value: NewAccount) -> Self {
+/// Converts the API [NewAccountRequest] model to an [Account] model.
+impl From<NewAccountRequest> for NewAccount {
+    fn from(value: NewAccountRequest) -> Self {
         crate::services::accounts::NewAccount {
             email: value.email,
             password: value.password,
@@ -42,10 +42,10 @@ impl From<NewAccount> for crate::services::accounts::NewAccount {
     }
 }
 
-/// Converts the [AccountsService] account model to the [Account] API model
-impl From<crate::services::accounts::Account> for Account {
+/// Converts [Account] model to an API [AccountResponse]
+impl From<Account> for AccountResponse {
     fn from(value: crate::services::accounts::Account) -> Self {
-        Account {
+        AccountResponse {
             id: value.id,
             email: value.email,
             display_name: value.display_name,
@@ -77,14 +77,14 @@ async fn get_root() -> &'static str {
 
 async fn post_account(
     State(app_state): State<Arc<AppState>>,
-    Json(new_account): Json<NewAccount>,
-) -> Result<Json<Account>, ApiError> {
-    let service_account = app_state
+    Json(new_account_request): Json<NewAccountRequest>,
+) -> Result<Json<AccountResponse>, ApiError> {
+    let account = app_state
         .accounts_service
-        .create_account(&new_account.into())
+        .create_account(&new_account_request.into())
         .await?;
 
-    Ok(Json(service_account.into()))
+    Ok(Json(account.into()))
 }
 
 #[cfg(test)]
@@ -126,7 +126,7 @@ mod tests {
 
     #[tokio::test]
     async fn new_account_returns_nyi() {
-        let new_account = NewAccount {
+        let new_account_request = NewAccountRequest {
             email: "test".to_string(),
             password: "test".to_string(),
             display_name: Some("Tester McTester".to_string()),
@@ -134,7 +134,7 @@ mod tests {
 
         let request = Request::post("/accounts")
             .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-            .body(Body::from(serde_json::to_vec(&new_account).unwrap()))
+            .body(Body::from(serde_json::to_vec(&new_account_request).unwrap()))
             .unwrap();
         let response = get_router().oneshot(request).await.unwrap();
 
