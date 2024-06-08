@@ -12,13 +12,47 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     api::models::{Account, NewAccount},
-    services::accounts::AccountsService,
+    services::accounts::{AccountsService, AccountsServiceError},
 };
 
 use super::errors::ApiError;
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
+
+/// Converts [AccountsServiceError] instances into [ApiError] instances
+impl From<AccountsServiceError> for ApiError {
+    fn from(value: AccountsServiceError) -> Self {
+        match value {
+            crate::services::accounts::AccountsServiceError::NotYetImplemented => {
+                ApiError::NotYetImplemented
+            }
+        }
+    }
+}
+
+/// Converts the API [NewAccount] model to the corresponding model for the [AccountsService]
+impl From<NewAccount> for crate::services::accounts::NewAccount {
+    fn from(value: NewAccount) -> Self {
+        crate::services::accounts::NewAccount {
+            email: value.email,
+            password: value.password,
+            display_name: value.display_name,
+        }
+    }
+}
+
+/// Converts the [AccountsService] account model to the [Account] API model
+impl From<crate::services::accounts::Account> for Account {
+    fn from(value: crate::services::accounts::Account) -> Self {
+        Account {
+            id: value.id,
+            email: value.email,
+            display_name: value.display_name,
+            created_at: value.created_at,
+        }
+    }
+}
 
 struct AppState {
     accounts_service: Box<dyn AccountsService>,
@@ -45,7 +79,12 @@ async fn post_account(
     State(app_state): State<Arc<AppState>>,
     Json(new_account): Json<NewAccount>,
 ) -> Result<Json<Account>, ApiError> {
-    Err(ApiError::NotYetImplemented)
+    let service_account = app_state
+        .accounts_service
+        .create_account(&new_account.into())
+        .await?;
+
+    Ok(Json(service_account.into()))
 }
 
 #[cfg(test)]
