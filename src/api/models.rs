@@ -11,7 +11,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Represents a new account signup.
+/// Represents a new account signup API request body.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewAccountRequest {
     /// Account email address.
@@ -22,6 +22,7 @@ pub struct NewAccountRequest {
     pub display_name: Option<String>,
 }
 
+/// Represents an account returned in an API response
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountResponse {
     /// Unique ID
