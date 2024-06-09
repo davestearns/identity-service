@@ -28,15 +28,24 @@ impl AccountsService {
         &self,
         new_account: &NewAccount,
     ) -> Result<Account, AccountsServiceError> {
+        if new_account.email.trim().is_empty() {
+            return Err(AccountsServiceError::EmptyEmail);
+        }
+        if new_account.password.is_empty() {
+            return Err(AccountsServiceError::EmptyPassword);
+        }
         let argon2 = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = argon2.hash_password(new_account.password.as_bytes(), &salt)?;
         let id = ID::Account.create();
         let account = Account {
             id,
-            email: new_account.email.clone(),
+            email: new_account.email.trim().to_string(),
             password_hash: password_hash.to_string(),
-            display_name: new_account.display_name.clone(),
+            display_name: new_account
+                .display_name
+                .clone()
+                .map(|v| v.trim().to_string()),
             created_at: Utc::now(),
         };
         self.store.insert(&account).await?;

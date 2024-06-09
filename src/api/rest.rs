@@ -31,6 +31,9 @@ impl From<AccountsServiceError> for ApiError {
             AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
             AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
             AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
+            AccountsServiceError::EmptyEmail | AccountsServiceError::EmptyPassword => {
+                ApiError::BadRequest(value.to_string())
+            }
         }
     }
 }
@@ -123,13 +126,19 @@ mod tests {
             password: "test_password".to_string(),
             display_name: Some("Tester McTester".to_string()),
         };
-        let response = test_server().post("/accounts").json(&new_account_request).await;
-        
+        let response = test_server()
+            .post("/accounts")
+            .json(&new_account_request)
+            .await;
+
         response.assert_status_ok();
         let response_account: AccountResponse = response.json();
         assert!(!response_account.id.is_empty());
         assert_eq!(new_account_request.email, response_account.email);
-        assert_eq!(new_account_request.display_name, response_account.display_name);
+        assert_eq!(
+            new_account_request.display_name,
+            response_account.display_name
+        );
     }
 
     #[tokio::test]
@@ -139,12 +148,30 @@ mod tests {
             password: "test_password".to_string(),
             display_name: None,
         };
-        let response = test_server().post("/accounts").json(&new_account_request).await;
-        
+        let response = test_server()
+            .post("/accounts")
+            .json(&new_account_request)
+            .await;
+
         response.assert_status_ok();
         let response_account: AccountResponse = response.json();
         assert!(!response_account.id.is_empty());
         assert_eq!(new_account_request.email, response_account.email);
         assert_eq!(None, response_account.display_name);
+    }
+
+    #[tokio::test]
+    async fn new_account_empty_password() {
+        let new_account_request = NewAccountRequest {
+            email: "test@test.com".to_string(),
+            password: "".to_string(),
+            display_name: None,
+        };
+        let response = test_server()
+            .post("/accounts")
+            .json(&new_account_request)
+            .await;
+
+        response.assert_status_bad_request();
     }
 }

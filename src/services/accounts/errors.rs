@@ -11,6 +11,10 @@ pub enum AccountsServiceError {
     PasswordHashingError(argon2::password_hash::errors::Error),
     #[error("data store error")]
     StoreError(#[from] AccountsStoreError),
+    #[error("empty password")]
+    EmptyEmail,
+    #[error("empty password")]
+    EmptyPassword,
 }
 
 impl From<argon2::password_hash::errors::Error> for AccountsServiceError {

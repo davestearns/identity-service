@@ -12,6 +12,8 @@ pub enum ApiError {
     NotYetImplemented,
     #[error("internal error: {0}")]
     Internal(String),
+    #[error("bad request: {0}")]
+    BadRequest(String),
 }
 
 impl IntoResponse for ApiError {
@@ -22,6 +24,7 @@ impl IntoResponse for ApiError {
                 "This API is not yet implemented.",
             ),
             Self::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.as_str()),
+            Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.as_str()),
         };
         let body = ApiErrorResponse {
             message: message.to_string(),

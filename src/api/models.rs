@@ -37,6 +37,7 @@ pub struct AccountResponse {
     /// Account email address.
     pub email: String,
     /// Optional diplay name suitable for showing on screen.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     /// When this account was created.
     pub created_at: DateTime<Utc>,
