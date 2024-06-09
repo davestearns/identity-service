@@ -91,38 +91,44 @@ async fn post_account(
 
 #[cfg(test)]
 mod tests {
-    use axum::{
-        body::Body,
-        http::{Request, StatusCode},
-    };
-    use http_body_util::BodyExt;
-    use tower::ServiceExt;
+    use axum_test::TestServer;
 
-    use crate::{services::accounts::AccountsService, stores::fake::FakeAccountsService};
+    use crate::{services::accounts::AccountsService, stores::fake::FakeAccountsStore};
 
     use super::*;
 
-    fn get_router() -> Router {
-        let accounts_service = AccountsService::new(FakeAccountsService::new());
-        router(accounts_service)
+    fn test_server() -> TestServer {
+        let accounts_store = FakeAccountsStore::new();
+        let accounts_service = AccountsService::new(accounts_store);
+        TestServer::new(router(accounts_service)).unwrap()
     }
 
     #[tokio::test]
     async fn root_returns_correct_response() {
-        let request = Request::get("/").body(Body::empty()).unwrap();
-        let response = get_router().oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        assert_eq!(&body[..], ROOT_RESPONSE.as_bytes());
+        let response = test_server().get("/").await;
+        response.assert_status_ok();
+        response.assert_text(ROOT_RESPONSE);
     }
 
     #[tokio::test]
     async fn invalid_route_returns_not_found() {
-        let request = Request::get("/invalid").body(Body::empty()).unwrap();
-        let response = get_router().oneshot(request).await.unwrap();
+        let response = test_server().get("/invalid").await;
+        response.assert_status_not_found();
+    }
 
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    #[tokio::test]
+    async fn new_account_success() {
+        let new_account_request = NewAccountRequest {
+            email: "test@test.com".to_string(),
+            password: "test_password".to_string(),
+            display_name: Some("Tester McTester".to_string()),
+        };
+        let response = test_server().post("/accounts").json(&new_account_request).await;
+        
+        response.assert_status_ok();
+        let response_account: AccountResponse = response.json();
+        assert!(!response_account.id.is_empty());
+        assert_eq!(new_account_request.email, response_account.email);
+        assert_eq!(new_account_request.display_name, response_account.display_name);
     }
 }
