@@ -1,7 +1,7 @@
 pub mod errors;
-pub mod postgres;
 #[cfg(test)]
 pub mod fake;
+pub mod postgres;
 
 use axum::async_trait;
 use errors::AccountsStoreError;

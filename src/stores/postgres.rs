@@ -34,13 +34,17 @@ impl PostgresAccountsStore {
 #[async_trait]
 impl AccountsStore for PostgresAccountsStore {
     async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
-        sqlx::query("insert into accounts(id,email,display_name,created_at) values ($1,$2,$3,$4)")
-            .bind(&account.id)
-            .bind(&account.email)
-            .bind(&account.display_name)
-            .bind(account.created_at)
-            .execute(&self.pool)
-            .await?;
+        sqlx::query(
+            "insert into accounts(id,email,password_hash,display_name,created_at) \
+            values ($1,$2,$3,$4,$5)",
+        )
+        .bind(&account.id)
+        .bind(&account.email)
+        .bind(&account.password_hash)
+        .bind(&account.display_name)
+        .bind(account.created_at)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }

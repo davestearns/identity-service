@@ -24,7 +24,7 @@
 # This will stop the containers and delete them.
 services:
   db:
-    image: postgres:latest
+    build: ./docker/postgres
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
