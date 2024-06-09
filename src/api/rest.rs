@@ -29,7 +29,8 @@ impl From<AccountsServiceError> for ApiError {
     fn from(value: AccountsServiceError) -> Self {
         match value {
             AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
-            AccountsServiceError::PasswordHashingError(msg) => ApiError::Internal(msg.to_string()),
+            AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
+            AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
         }
     }
 }
@@ -92,27 +93,18 @@ async fn post_account(
 mod tests {
     use axum::{
         body::Body,
-        http::{self, Request, Response, StatusCode},
+        http::{Request, StatusCode},
     };
     use http_body_util::BodyExt;
-    use serde::de::DeserializeOwned;
     use tower::ServiceExt;
 
-    use crate::{
-        api::models::ApiErrorResponse, services::accounts::AccountsService,
-        stores::fake::FakeAccountsService,
-    };
+    use crate::{services::accounts::AccountsService, stores::fake::FakeAccountsService};
 
     use super::*;
 
     fn get_router() -> Router {
         let accounts_service = AccountsService::new(FakeAccountsService::new());
         router(accounts_service)
-    }
-
-    async fn parse_as_json<T: DeserializeOwned>(response: Response<Body>) -> T {
-        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
-        serde_json::from_slice(&body_bytes[..]).unwrap()
     }
 
     #[tokio::test]
@@ -132,33 +124,5 @@ mod tests {
         let response = get_router().oneshot(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn new_account_returns_nyi() {
-        let new_account_request = NewAccountRequest {
-            email: "test".to_string(),
-            password: "test".to_string(),
-            display_name: Some("Tester McTester".to_string()),
-        };
-
-        let request = Request::post("/accounts")
-            .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-            .body(Body::from(
-                serde_json::to_vec(&new_account_request).unwrap(),
-            ))
-            .unwrap();
-        let response = get_router().oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
-        let json: ApiErrorResponse = parse_as_json(response).await;
-
-        assert_eq!(
-            json,
-            ApiErrorResponse {
-                status: StatusCode::NOT_IMPLEMENTED.as_u16(),
-                message: "This API is not yet implemented.".to_string(),
-            }
-        );
     }
 }

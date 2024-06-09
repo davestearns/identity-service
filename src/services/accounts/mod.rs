@@ -2,12 +2,15 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHasher,
 };
+use chrono::Utc;
 use errors::AccountsServiceError;
+use ids::ID;
 use models::{Account, NewAccount};
 
 use crate::stores::AccountsStore;
 
 pub mod errors;
+pub mod ids;
 pub mod models;
 
 pub struct AccountsService {
@@ -28,7 +31,15 @@ impl AccountsService {
         let argon2 = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = argon2.hash_password(new_account.password.as_bytes(), &salt)?;
-
-        Err(AccountsServiceError::NotYetImplemented)
+        let id = ID::Account.create();
+        let account = Account {
+            id,
+            email: new_account.email.clone(),
+            password_hash: password_hash.to_string(),
+            display_name: new_account.display_name.clone(),
+            created_at: Utc::now(),
+        };
+        self.store.insert(&account).await?;
+        Ok(account)
     }
 }

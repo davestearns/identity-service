@@ -16,15 +16,15 @@ pub enum ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
-        let (status, message) = match self {
+        let (status, message) = match &self {
             Self::NotYetImplemented => (
                 StatusCode::NOT_IMPLEMENTED,
-                "This API is not yet implemented.".to_string(),
+                "This API is not yet implemented.",
             ),
-            Self::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+            Self::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.as_str()),
         };
         let body = ApiErrorResponse {
-            message,
+            message: message.to_string(),
             status: status.as_u16(),
         };
 

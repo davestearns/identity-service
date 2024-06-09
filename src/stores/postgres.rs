@@ -38,7 +38,7 @@ impl AccountsStore for PostgresAccountsStore {
             .bind(&account.id)
             .bind(&account.email)
             .bind(&account.display_name)
-            .bind(&account.created_at)
+            .bind(account.created_at)
             .execute(&self.pool)
             .await?;
         Ok(())
