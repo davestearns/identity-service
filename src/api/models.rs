@@ -11,6 +11,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+/// Represents an API error JSON response
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct ApiErrorResponse {
+    pub status: u16,
+    pub message: String,
+}
+
 /// Represents a new account signup API request body.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewAccountRequest {

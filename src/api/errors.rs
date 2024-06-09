@@ -1,21 +1,15 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use super::models::ApiErrorResponse;
 
 /// Represents an error returned by one of the API handlers.
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error("not yet implemented")]
     NotYetImplemented,
-}
-
-/// Interal struct used for the error response JSON.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct ApiErrorResponse {
-    pub status: u16,
-    pub message: String,
 }
 
 impl IntoResponse for ApiError {

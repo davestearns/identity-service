@@ -97,7 +97,7 @@ mod tests {
     use serde::de::DeserializeOwned;
     use tower::ServiceExt;
 
-    use crate::{api::errors::ApiErrorResponse, services::accounts::AccountsServiceImpl};
+    use crate::{api::models::ApiErrorResponse, services::accounts::AccountsServiceImpl};
 
     use super::*;
 
