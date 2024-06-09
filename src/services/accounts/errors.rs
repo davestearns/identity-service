@@ -10,15 +10,26 @@ pub enum AccountsServiceError {
     #[error("password hashing error")]
     PasswordHashingError(argon2::password_hash::errors::Error),
     #[error("data store error")]
-    StoreError(#[from] AccountsStoreError),
+    StoreError(AccountsStoreError),
     #[error("empty password")]
     EmptyEmail,
     #[error("empty password")]
     EmptyPassword,
+    #[error("email already exists")]
+    EmailAlreadyExists,
 }
 
 impl From<argon2::password_hash::errors::Error> for AccountsServiceError {
     fn from(value: argon2::password_hash::errors::Error) -> Self {
         AccountsServiceError::PasswordHashingError(value)
+    }
+}
+
+impl From<AccountsStoreError> for AccountsServiceError {
+    fn from(value: AccountsStoreError) -> Self {
+        match value {
+            AccountsStoreError::EmailAlreadyExists => AccountsServiceError::EmailAlreadyExists,
+            _ => Self::StoreError(value),
+        }
     }
 }

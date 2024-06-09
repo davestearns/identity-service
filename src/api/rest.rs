@@ -31,9 +31,9 @@ impl From<AccountsServiceError> for ApiError {
             AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
             AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
             AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
-            AccountsServiceError::EmptyEmail | AccountsServiceError::EmptyPassword => {
-                ApiError::BadRequest(value.to_string())
-            }
+            AccountsServiceError::EmptyEmail
+            | AccountsServiceError::EmptyPassword
+            | AccountsServiceError::EmailAlreadyExists => ApiError::BadRequest(value.to_string()),
         }
     }
 }

@@ -7,4 +7,6 @@ pub enum AccountsStoreError {
     NotYetImplemented,
     #[error("database error: {0}")]
     DatabaseError(String),
+    #[error("email already exists")]
+    EmailAlreadyExists,
 }

@@ -34,7 +34,7 @@ impl PostgresAccountsStore {
 #[async_trait]
 impl AccountsStore for PostgresAccountsStore {
     async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
-        sqlx::query(
+        let result = sqlx::query(
             "insert into accounts(id,email,password_hash,display_name,created_at) \
             values ($1,$2,$3,$4,$5)",
         )
@@ -44,7 +44,15 @@ impl AccountsStore for PostgresAccountsStore {
         .bind(&account.display_name)
         .bind(account.created_at)
         .execute(&self.pool)
-        .await?;
-        Ok(())
+        .await;
+
+        result
+            .map_err(|err| match err {
+                sqlx::Error::Database(dberr) if dberr.is_unique_violation() => {
+                    AccountsStoreError::EmailAlreadyExists
+                }
+                _ => AccountsStoreError::DatabaseError(err.to_string()),
+            })
+            .map(|_| ())
     }
 }
