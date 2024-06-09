@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use axum::{
+    debug_handler,
     extract::{Json, State},
     routing::{get, post},
     Router,
@@ -97,12 +98,15 @@ mod tests {
     use serde::de::DeserializeOwned;
     use tower::ServiceExt;
 
-    use crate::{api::models::ApiErrorResponse, services::accounts::AccountsService};
+    use crate::{
+        api::models::ApiErrorResponse, services::accounts::AccountsService,
+        stores::fake::FakeAccountsService,
+    };
 
     use super::*;
 
     fn get_router() -> Router {
-        let accounts_service = AccountsService::new();
+        let accounts_service = AccountsService::new(FakeAccountsService::new());
         router(accounts_service)
     }
 

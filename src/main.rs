@@ -7,6 +7,7 @@ use dotenvy::dotenv;
 use errors::StartupError;
 use services::accounts::AccountsService;
 use std::{env, error::Error, str::FromStr};
+use stores::postgres::PostgresAccountsStore;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -21,7 +22,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
     // Connect to database and construct the account service
-    let accounts_service = AccountsService::new();
+    let postgres_url =
+        env::var("POSTGRES_URL").expect("Set the POSTGRES_URL environment variable.");
+    let accounts_store = PostgresAccountsStore::new(&postgres_url, 10).await?;
+    let accounts_service = AccountsService::new(accounts_store);
     let rest_router = api::rest::router(accounts_service);
 
     // Listen on requested address

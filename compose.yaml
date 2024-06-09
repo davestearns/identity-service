@@ -1,0 +1,31 @@
+# Note: this is used for *local development* where you are running the
+# rust service from your machine's command line. The container's ports
+# will be published to equivalent ports on the host so that the service
+# can connect to them directly even though it is running on your host.
+#
+# The postgres database container requires you to set a password, and the
+# rust service needs to use that same password, so it must be set as an
+# environment variable before running `docker compose up`. For example:
+#
+#   $ export POSTGRES_PASSWORD=`uuidgen`
+#
+# To start the containers at the beginning of a development session, run:
+#
+#   $ docker compose up -d
+#
+# This will start all containers in the background. Use `docker ps -a` to verify that
+# they started OK. If the containers say they are stopped, something went wrong.
+# `docker logs <container-id>` to look at the logs for error messages.
+#
+# When you're finished, run:
+#
+#   $ docker compose down
+#
+# This will stop the containers and delete them.
+services:
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - 127.0.0.1:5432:5432

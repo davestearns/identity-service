@@ -11,7 +11,7 @@ pub struct NewAccount {
     pub display_name: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Account {
     /// Unique ID
     pub id: String,
