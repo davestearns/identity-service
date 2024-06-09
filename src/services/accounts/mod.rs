@@ -1,3 +1,7 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use errors::AccountsServiceError;
 use models::{Account, NewAccount};
 
@@ -19,8 +23,12 @@ impl AccountsService {
 
     pub async fn create_account(
         &self,
-        _new_account: &NewAccount,
+        new_account: &NewAccount,
     ) -> Result<Account, AccountsServiceError> {
+        let argon2 = Argon2::default();
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = argon2.hash_password(new_account.password.as_bytes(), &salt)?;
+
         Err(AccountsServiceError::NotYetImplemented)
     }
 }

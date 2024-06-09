@@ -10,6 +10,8 @@ use super::models::ApiErrorResponse;
 pub enum ApiError {
     #[error("not yet implemented")]
     NotYetImplemented,
+    #[error("internal error: {0}")]
+    Internal(String),
 }
 
 impl IntoResponse for ApiError {
@@ -19,6 +21,7 @@ impl IntoResponse for ApiError {
                 StatusCode::NOT_IMPLEMENTED,
                 "This API is not yet implemented.".to_string(),
             ),
+            Self::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
         };
         let body = ApiErrorResponse {
             message,

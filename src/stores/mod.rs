@@ -10,5 +10,5 @@ use crate::services::accounts::models::Account;
 
 #[async_trait]
 pub trait AccountsStore: Send + Sync {
-    async fn insert(&mut self, account: &Account) -> Result<(), AccountsStoreError>;
+    async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError>;
 }

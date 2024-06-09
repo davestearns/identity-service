@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use axum::{
-    debug_handler,
     extract::{Json, State},
     routing::{get, post},
     Router,
@@ -30,6 +29,7 @@ impl From<AccountsServiceError> for ApiError {
     fn from(value: AccountsServiceError) -> Self {
         match value {
             AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
+            AccountsServiceError::PasswordHashingError(msg) => ApiError::Internal(msg.to_string()),
         }
     }
 }

@@ -19,7 +19,7 @@ impl FakeAccountsService {
 
 #[async_trait]
 impl AccountsStore for FakeAccountsService {
-    async fn insert(&mut self, account: &Account) -> Result<(), AccountsStoreError> {
+    async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
         self.accounts.insert(account.id.clone(), account.clone());
         Ok(())
     }
