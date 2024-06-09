@@ -91,18 +91,24 @@ async fn post_account(
 mod tests {
     use axum::{
         body::Body,
-        http::{self, Request, StatusCode},
+        http::{self, Request, Response, StatusCode},
     };
     use http_body_util::BodyExt;
+    use serde::de::DeserializeOwned;
     use tower::ServiceExt;
 
-    use crate::services::accounts::AccountsServiceImpl;
+    use crate::{api::errors::ApiErrorResponse, services::accounts::AccountsServiceImpl};
 
     use super::*;
 
     fn get_router() -> Router {
         let accounts_service = AccountsServiceImpl::new();
         router(accounts_service)
+    }
+
+    async fn parse_as_json<T: DeserializeOwned>(response: Response<Body>) -> T {
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        serde_json::from_slice(&body_bytes[..]).unwrap()
     }
 
     #[tokio::test]
@@ -134,10 +140,21 @@ mod tests {
 
         let request = Request::post("/accounts")
             .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-            .body(Body::from(serde_json::to_vec(&new_account_request).unwrap()))
+            .body(Body::from(
+                serde_json::to_vec(&new_account_request).unwrap(),
+            ))
             .unwrap();
         let response = get_router().oneshot(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        let json: ApiErrorResponse = parse_as_json(response).await;
+
+        assert_eq!(
+            json,
+            ApiErrorResponse {
+                status: StatusCode::NOT_IMPLEMENTED.as_u16(),
+                message: "This API is not yet implemented.".to_string(),
+            }
+        );
     }
 }

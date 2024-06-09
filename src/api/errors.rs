@@ -1,19 +1,21 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// Represents an error returned by one of the API handlers.
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ApiError {
+    #[error("not yet implemented")]
     NotYetImplemented,
 }
 
 /// Interal struct used for the error response JSON.
-#[derive(Debug, Serialize)]
-struct ApiErrorResponse {
-    status: u16,
-    message: String,
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct ApiErrorResponse {
+    pub status: u16,
+    pub message: String,
 }
 
 impl IntoResponse for ApiError {
@@ -21,7 +23,7 @@ impl IntoResponse for ApiError {
         let (status, message) = match self {
             Self::NotYetImplemented => (
                 StatusCode::NOT_IMPLEMENTED,
-                "Not yet implemented".to_string(),
+                "This API is not yet implemented.".to_string(),
             ),
         };
         let body = ApiErrorResponse {

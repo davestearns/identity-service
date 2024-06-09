@@ -1,25 +1,13 @@
 //! Public interface for the Accounts service.
 
-use std::error::Error;
-use std::fmt::Display;
-
 use axum::async_trait;
 use chrono::{DateTime, Utc};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum AccountsServiceError {
+    #[error("not yet implemented")]
     NotYetImplemented,
-}
-
-impl Error for AccountsServiceError {}
-
-impl Display for AccountsServiceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let msg = match self {
-            Self::NotYetImplemented => "Not yet implemented".to_string(),
-        };
-        f.write_str(&msg)
-    }
 }
 
 /// Represents a new account signup.
