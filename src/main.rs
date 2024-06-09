@@ -1,10 +1,11 @@
 mod api;
 mod errors;
 mod services;
+mod stores;
 
 use dotenvy::dotenv;
 use errors::StartupError;
-use services::accounts::AccountsServiceImpl;
+use services::accounts::AccountsService;
 use std::{env, error::Error, str::FromStr};
 
 #[tokio::main]
@@ -19,16 +20,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
-    let accounts_service = AccountsServiceImpl::new();
+    // Connect to database and construct the account service
+    let accounts_service = AccountsService::new();
+    let rest_router = api::rest::router(accounts_service);
 
+    // Listen on requested address
     let addr = env::var("ADDR").map_err(|_| StartupError::AddrNotSet)?;
     let listener = tokio::net::TcpListener::bind(addr.clone())
         .await
         .expect("Failed to listen on port");
 
     println!("Service is listening on {}", addr);
-
-    let rest_router = api::rest::router(accounts_service);
     axum::serve(listener, rest_router).await?;
 
     Ok(())

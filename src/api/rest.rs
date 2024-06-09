@@ -12,7 +12,11 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     api::models::{AccountResponse, NewAccountRequest},
-    services::accounts::{Account, AccountsService, AccountsServiceError, NewAccount},
+    services::accounts::{
+        errors::AccountsServiceError,
+        models::{Account, NewAccount},
+        AccountsService,
+    },
 };
 
 use super::errors::ApiError;
@@ -24,9 +28,7 @@ const ROOT_RESPONSE: &str = "Welcome to the identity service!";
 impl From<AccountsServiceError> for ApiError {
     fn from(value: AccountsServiceError) -> Self {
         match value {
-            crate::services::accounts::AccountsServiceError::NotYetImplemented => {
-                ApiError::NotYetImplemented
-            }
+            AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
         }
     }
 }
@@ -34,7 +36,7 @@ impl From<AccountsServiceError> for ApiError {
 /// Converts the API [NewAccountRequest] model to an [Account] model.
 impl From<NewAccountRequest> for NewAccount {
     fn from(value: NewAccountRequest) -> Self {
-        crate::services::accounts::NewAccount {
+        NewAccount {
             email: value.email,
             password: value.password,
             display_name: value.display_name,
@@ -44,7 +46,7 @@ impl From<NewAccountRequest> for NewAccount {
 
 /// Converts [Account] model to an API [AccountResponse]
 impl From<Account> for AccountResponse {
-    fn from(value: crate::services::accounts::Account) -> Self {
+    fn from(value: Account) -> Self {
         AccountResponse {
             id: value.id,
             email: value.email,
@@ -55,14 +57,12 @@ impl From<Account> for AccountResponse {
 }
 
 struct AppState {
-    accounts_service: Box<dyn AccountsService>,
+    accounts_service: AccountsService,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router(accounts_service: impl AccountsService + 'static) -> Router {
-    let shared_state = Arc::new(AppState {
-        accounts_service: Box::new(accounts_service),
-    });
+pub fn router(accounts_service: AccountsService) -> Router {
+    let shared_state = Arc::new(AppState { accounts_service });
 
     Router::new()
         .route("/", get(get_root))
@@ -97,12 +97,12 @@ mod tests {
     use serde::de::DeserializeOwned;
     use tower::ServiceExt;
 
-    use crate::{api::models::ApiErrorResponse, services::accounts::AccountsServiceImpl};
+    use crate::{api::models::ApiErrorResponse, services::accounts::AccountsService};
 
     use super::*;
 
     fn get_router() -> Router {
-        let accounts_service = AccountsServiceImpl::new();
+        let accounts_service = AccountsService::new();
         router(accounts_service)
     }
 
