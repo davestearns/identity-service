@@ -49,7 +49,7 @@ impl AccountsStore for PostgresAccountsStore {
         result
             .map_err(|err| match err {
                 sqlx::Error::Database(dberr) if dberr.is_unique_violation() => {
-                    AccountsStoreError::EmailAlreadyExists
+                    AccountsStoreError::EmailAlreadyExists(account.email.clone())
                 }
                 _ => AccountsStoreError::DatabaseError(err.to_string()),
             })

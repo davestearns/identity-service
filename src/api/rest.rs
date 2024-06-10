@@ -33,7 +33,9 @@ impl From<AccountsServiceError> for ApiError {
             AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
             AccountsServiceError::EmptyEmail
             | AccountsServiceError::EmptyPassword
-            | AccountsServiceError::EmailAlreadyExists => ApiError::BadRequest(value.to_string()),
+            | AccountsServiceError::EmailAlreadyExists(_) => {
+                ApiError::BadRequest(value.to_string())
+            }
         }
     }
 }
@@ -176,6 +178,11 @@ mod tests {
             .await;
 
         response.assert_status_bad_request();
+        let response_body: ApiErrorResponse = response.json();
+        assert_eq!(
+            response_body.message,
+            "The password may not be empty".to_string()
+        )
     }
 
     #[tokio::test]
@@ -198,6 +205,9 @@ mod tests {
 
         response.assert_status_bad_request();
         let response_body: ApiErrorResponse = response.json();
-        assert_eq!(response_body.message, "email already exists".to_string())
+        assert_eq!(
+            response_body.message,
+            "The email address 'test@test.com' is already registered".to_string()
+        )
     }
 }

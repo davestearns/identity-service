@@ -23,7 +23,7 @@ impl FakeAccountsStore {
 impl AccountsStore for FakeAccountsStore {
     async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
         if self.email_to_id.contains_key(&account.email) {
-            Err(AccountsStoreError::EmailAlreadyExists)
+            Err(AccountsStoreError::EmailAlreadyExists(account.email.clone()))
         } else {
             self.accounts.insert(account.id.clone(), account.clone());
             self.email_to_id
