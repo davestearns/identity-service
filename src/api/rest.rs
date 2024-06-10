@@ -96,7 +96,10 @@ async fn post_account(
 mod tests {
     use axum_test::TestServer;
 
-    use crate::{services::accounts::AccountsService, stores::fake::FakeAccountsStore};
+    use crate::{
+        api::models::ApiErrorResponse, services::accounts::AccountsService,
+        stores::fake::FakeAccountsStore,
+    };
 
     use super::*;
 
@@ -173,5 +176,28 @@ mod tests {
             .await;
 
         response.assert_status_bad_request();
+    }
+
+    #[tokio::test]
+    async fn new_account_duplicate_email() {
+        let new_account_request = NewAccountRequest {
+            email: "test@test.com".to_string(),
+            password: "test_password".to_string(),
+            display_name: None,
+        };
+        let server = test_server();
+
+        // insert the account
+        server
+            .post("/accounts")
+            .json(&new_account_request)
+            .await
+            .assert_status_ok();
+        // try to insert it again -- should get a duplicate email bad request
+        let response = server.post("/accounts").json(&new_account_request).await;
+
+        response.assert_status_bad_request();
+        let response_body: ApiErrorResponse = response.json();
+        assert_eq!(response_body.message, "email already exists".to_string())
     }
 }
