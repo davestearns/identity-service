@@ -5,7 +5,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 
 use crate::services::accounts::models::Account;
 
-use super::{errors::AccountsStoreError, AccountsStore};
+use super::{error::AccountsStoreError, AccountsStore};
 
 impl From<sqlx::Error> for AccountsStoreError {
     fn from(value: sqlx::Error) -> Self {

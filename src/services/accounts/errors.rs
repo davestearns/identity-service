@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::stores::errors::AccountsStoreError;
+use super::stores::error::AccountsStoreError;
 
 #[derive(Error, Debug)]
 pub enum AccountsServiceError {

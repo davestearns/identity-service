@@ -4,4 +4,4 @@
 
 pub mod models;
 pub mod rest;
-pub mod errors;
+pub mod error;

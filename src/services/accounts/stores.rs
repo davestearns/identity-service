@@ -1,10 +1,10 @@
-pub mod errors;
+pub mod error;
 #[cfg(test)]
 pub mod fake;
 pub mod postgres;
 
 use axum::async_trait;
-use errors::AccountsStoreError;
+use error::AccountsStoreError;
 
 use crate::services::accounts::models::Account;
 

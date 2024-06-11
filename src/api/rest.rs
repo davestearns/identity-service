@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-use super::errors::ApiError;
+use super::error::ApiError;
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";

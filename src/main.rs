@@ -1,9 +1,9 @@
 mod api;
-mod errors;
+mod error;
 mod services;
 
 use dotenvy::dotenv;
-use errors::StartupError;
+use error::StartupError;
 use services::accounts::{stores::postgres::PostgresAccountsStore, AccountsService};
 use std::{env, error::Error, str::FromStr};
 

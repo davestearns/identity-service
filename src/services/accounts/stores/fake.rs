@@ -3,7 +3,7 @@ use dashmap::DashMap;
 
 use crate::services::accounts::models::Account;
 
-use super::{errors::AccountsStoreError, AccountsStore};
+use super::{error::AccountsStoreError, AccountsStore};
 
 pub struct FakeAccountsStore {
     accounts: DashMap<String, Account>,
