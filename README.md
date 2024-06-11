@@ -22,19 +22,19 @@ The service implements the following APIs:
 | POST | /accounts | Creates a new local account | [NewAccountRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 | POST | /sessions | Authenticates provided credentials | [AuthenticationRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 
-A caller such as an API gateway could use these APIs to support sign-up/in. During sign-in, the API gateway would use this service to authenticate the credentials, create a new digitally-signed session token, and put the account details into a cache like [redis](https://redis.io/) using the session token as the key, and drop the session token as a response cookie. Subsequent requests that include the cookie would be treated as authenticated if the token's signature is still valid.
+A caller such as an API gateway could use these APIs to support sign-up/in. During sign-in, the API gateway would use this service to authenticate the credentials, create a new digitally-signed session token, put the account details into a cache like [redis](https://redis.io/) using the session token as the key, and drop the session token as a response cookie. When the API gateway receives a subsequent request containing the cookie, it would validate the token's signature to ensure it wasn't tampered with or forged, and fetch the user profile from the cache if it all checks out.
 
 ## Architecture
 
-The architecture and code organization I used might be a tad overkill for such a simple service, but I wanted to work out an approach that could scale up to large monoliths with several internal but isolated services, and multiple types of APIs (REST, gRPC, WebSockets, GraphQL, etc).
+The architecture and code organization I used might be a tad overkill for such a simple service, but I wanted to work out an approach that could scale up to large monoliths with several internal but isolated services, supporting multiple types of APIs (REST, gRPC, WebSockets, GraphQL, etc).
 
 The architecture is divided into layers:
 
 - **API Layer:** This is a relatively thin layer that is responsible only for the semantics of the API protocol and contract--all the real work happens in the service layer. For example, the API layer is concerned with things like JSON \[de]serialization and HTTP status codes, but not data validation, business logic, or data storage. This layer defines models for API requests and responses, but those are separate from those defined at the Service layer so that the APIs can evolve independently of the services. This layer can support multiple kinds of APIs at the same time (REST, gRPC, WebSockets, etc) each of which interacts with the same set of internal services.
-- **Service Layer:** Responsible for enforcing all the business logic and interacting with the data stores. This layer can include multiple services, but they remain isolated from each other so that services can ensure data integrity and do intelligent caching. For example, if service A wants data from service B, it must go through the public service B interface, and not directly to the service's data store.
-- **Store Layer:** Responsible only for data storage and retrieval. This is a relatively thin layer that simply interacts with the database to insert, update, delete, and read data. Each service typically defines a [trait](./src/services/account/store.rs) for its data store, which can be implemented for different kinds of databases (e.g., PostgreSQL, MongoDB, DynamoDB, Aurora, Spanner, etc). This trait is also implemented on a [fake](./src/services/account/store/fake.rs) for unit testing.
+- **Service Layer:** There is where all the business logic is enforced and all the significant work gets done. This layer can include multiple services, but they remain isolated from each other so that services can ensure data integrity and do intelligent caching. For example, if service A wants something from service B, it must go through service B's public interface, and not directly to the service's tables in the data store.
+- **Store Layer:** This is a relatively thin layer that simply interacts with the target database to insert, update, delete, and read data. Each service typically defines a [trait](./src/services/account/store.rs) for its data store, which can be implemented for different kinds of databases (e.g., PostgreSQL, MongoDB, DynamoDB, Aurora, Spanner, etc). This trait is also implemented by a [fake](./src/services/account/store/fake.rs) that can be used for unit testing.
 
-Lower layers have not knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs, but do necessarily know about the Database they are talking to.
+Lower layers have no knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs, but do necessarily know about the Database they are talking to.
 
 ## Local Development
 
@@ -79,3 +79,5 @@ docker compose down
 ```
 
 The data being stored by the Postgres container lives inside the container so this will also destroy all the data. If you want to preserve data between runs, adjust the [compose.yaml](./compose.yaml) file to include a [volume mount](https://docs.docker.com/compose/compose-file/05-services/#volumes) that maps `/var/lib/postgresql/data` in the container to a file on your host's drive.
+
+If you already have an existing Postgres instance in a cloud provider and you want to use it instead, run the [schema creation script](./docker/postgres/schema.sql) in one of the databases, and set the `POSTGRES_URL` environment variable to point toward your instance.
