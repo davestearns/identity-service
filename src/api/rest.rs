@@ -12,10 +12,10 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     api::models::{AccountResponse, NewAccountRequest},
-    services::accounts::{
-        errors::AccountsServiceError,
+    services::account::{
+        error::AccountsServiceError,
         models::{Account, NewAccount},
-        AccountsService,
+        AccountService,
     },
 };
 
@@ -64,11 +64,11 @@ impl From<Account> for AccountResponse {
 }
 
 struct AppState {
-    accounts_service: AccountsService,
+    accounts_service: AccountService,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router(accounts_service: AccountsService) -> Router {
+pub fn router(accounts_service: AccountService) -> Router {
     let shared_state = Arc::new(AppState { accounts_service });
 
     Router::new()
@@ -99,15 +99,15 @@ mod tests {
     use axum_test::TestServer;
 
     use crate::{
-        api::models::ApiErrorResponse, services::accounts::stores::fake::FakeAccountsStore,
-        services::accounts::AccountsService,
+        api::models::ApiErrorResponse, services::account::store::fake::FakeAccountStore,
+        services::account::AccountService,
     };
 
     use super::*;
 
     fn test_server() -> TestServer {
-        let accounts_store = FakeAccountsStore::new();
-        let accounts_service = AccountsService::new(accounts_store);
+        let accounts_store = FakeAccountStore::new();
+        let accounts_service = AccountService::new(accounts_store);
         TestServer::new(router(accounts_service)).unwrap()
     }
 

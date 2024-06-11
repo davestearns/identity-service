@@ -1,18 +1,18 @@
 use axum::async_trait;
 use dashmap::DashMap;
 
-use crate::services::accounts::models::Account;
+use crate::services::account::models::Account;
 
-use super::{error::AccountsStoreError, AccountsStore};
+use super::{error::AccountStoreError, AccountStore};
 
-pub struct FakeAccountsStore {
+pub struct FakeAccountStore {
     accounts: DashMap<String, Account>,
     email_to_id: DashMap<String, String>,
 }
 
-impl FakeAccountsStore {
-    pub fn new() -> FakeAccountsStore {
-        FakeAccountsStore {
+impl FakeAccountStore {
+    pub fn new() -> FakeAccountStore {
+        FakeAccountStore {
             accounts: DashMap::new(),
             email_to_id: DashMap::new(),
         }
@@ -20,10 +20,10 @@ impl FakeAccountsStore {
 }
 
 #[async_trait]
-impl AccountsStore for FakeAccountsStore {
-    async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
+impl AccountStore for FakeAccountStore {
+    async fn insert(&self, account: &Account) -> Result<(), AccountStoreError> {
         if self.email_to_id.contains_key(&account.email) {
-            Err(AccountsStoreError::EmailAlreadyExists(account.email.clone()))
+            Err(AccountStoreError::EmailAlreadyExists(account.email.clone()))
         } else {
             self.accounts.insert(account.id.clone(), account.clone());
             self.email_to_id

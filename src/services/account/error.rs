@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::stores::error::AccountsStoreError;
+use super::store::error::AccountStoreError;
 
 #[derive(Error, Debug)]
 pub enum AccountsServiceError {
@@ -10,7 +10,7 @@ pub enum AccountsServiceError {
     #[error("There was an error hashing the password: {0}")]
     PasswordHashingError(argon2::password_hash::errors::Error),
     #[error("There was an error interacting with the data store: {0}")]
-    StoreError(AccountsStoreError),
+    StoreError(AccountStoreError),
     #[error("The email address may not be empty")]
     EmptyEmail,
     #[error("The email address '{0}' is already registered")]
@@ -25,10 +25,10 @@ impl From<argon2::password_hash::errors::Error> for AccountsServiceError {
     }
 }
 
-impl From<AccountsStoreError> for AccountsServiceError {
-    fn from(value: AccountsStoreError) -> Self {
+impl From<AccountStoreError> for AccountsServiceError {
+    fn from(value: AccountStoreError) -> Self {
         match value {
-            AccountsStoreError::EmailAlreadyExists(email) => {
+            AccountStoreError::EmailAlreadyExists(email) => {
                 AccountsServiceError::EmailAlreadyExists(email)
             }
             _ => Self::StoreError(value),

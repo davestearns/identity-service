@@ -3,24 +3,24 @@ use argon2::{
     Argon2, PasswordHasher,
 };
 use chrono::Utc;
-use errors::AccountsServiceError;
-use ids::ID;
+use error::AccountsServiceError;
+use id::ID;
 use models::{Account, NewAccount};
 
-use stores::AccountsStore;
+use store::AccountStore;
 
-pub mod errors;
-pub mod ids;
+pub mod error;
+pub mod id;
 pub mod models;
-pub mod stores;
+pub mod store;
 
-pub struct AccountsService {
-    store: Box<dyn AccountsStore>,
+pub struct AccountService {
+    store: Box<dyn AccountStore>,
 }
 
-impl AccountsService {
-    pub fn new(accounts_store: impl AccountsStore + 'static) -> AccountsService {
-        AccountsService {
+impl AccountService {
+    pub fn new(accounts_store: impl AccountStore + 'static) -> AccountService {
+        AccountService {
             store: Box::new(accounts_store),
         }
     }

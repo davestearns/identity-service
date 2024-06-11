@@ -3,37 +3,37 @@
 use axum::async_trait;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
-use crate::services::accounts::models::Account;
+use crate::services::account::models::Account;
 
-use super::{error::AccountsStoreError, AccountsStore};
+use super::{error::AccountStoreError, AccountStore};
 
-impl From<sqlx::Error> for AccountsStoreError {
+impl From<sqlx::Error> for AccountStoreError {
     fn from(value: sqlx::Error) -> Self {
-        AccountsStoreError::DatabaseError(value.to_string())
+        AccountStoreError::DatabaseError(value.to_string())
     }
 }
 
-pub struct PostgresAccountsStore {
+pub struct PostgresAccountStore {
     pool: PgPool,
 }
 
-impl PostgresAccountsStore {
+impl PostgresAccountStore {
     pub async fn new(
         url: &str,
         max_connections: u32,
-    ) -> Result<PostgresAccountsStore, AccountsStoreError> {
+    ) -> Result<PostgresAccountStore, AccountStoreError> {
         let pool = PgPoolOptions::new()
             .max_connections(max_connections)
             .connect(url)
             .await?;
 
-        Ok(PostgresAccountsStore { pool })
+        Ok(PostgresAccountStore { pool })
     }
 }
 
 #[async_trait]
-impl AccountsStore for PostgresAccountsStore {
-    async fn insert(&self, account: &Account) -> Result<(), AccountsStoreError> {
+impl AccountStore for PostgresAccountStore {
+    async fn insert(&self, account: &Account) -> Result<(), AccountStoreError> {
         let result = sqlx::query(
             "insert into accounts(id,email,password_hash,display_name,created_at) \
             values ($1,$2,$3,$4,$5)",
@@ -49,9 +49,9 @@ impl AccountsStore for PostgresAccountsStore {
         result
             .map_err(|err| match err {
                 sqlx::Error::Database(dberr) if dberr.is_unique_violation() => {
-                    AccountsStoreError::EmailAlreadyExists(account.email.clone())
+                    AccountStoreError::EmailAlreadyExists(account.email.clone())
                 }
-                _ => AccountsStoreError::DatabaseError(err.to_string()),
+                _ => AccountStoreError::DatabaseError(err.to_string()),
             })
             .map(|_| ())
     }

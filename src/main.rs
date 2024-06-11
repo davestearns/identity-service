@@ -4,7 +4,7 @@ mod services;
 
 use dotenvy::dotenv;
 use error::StartupError;
-use services::accounts::{stores::postgres::PostgresAccountsStore, AccountsService};
+use services::account::{store::postgres::PostgresAccountStore, AccountService};
 use std::{env, error::Error, str::FromStr};
 
 #[tokio::main]
@@ -22,8 +22,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Connect to database and construct the account service
     let postgres_url =
         env::var("POSTGRES_URL").expect("Set the POSTGRES_URL environment variable.");
-    let accounts_store = PostgresAccountsStore::new(&postgres_url, 10).await?;
-    let accounts_service = AccountsService::new(accounts_store);
+    let accounts_store = PostgresAccountStore::new(&postgres_url, 10).await?;
+    let accounts_service = AccountService::new(accounts_store);
     let rest_router = api::rest::router(accounts_service);
 
     // Listen on requested address

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use super::errors::AccountsServiceError;
+use super::error::AccountsServiceError;
 
 /// Represents a new account signup.
 #[derive(Debug)]

@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum AccountsStoreError {
+pub enum AccountStoreError {
     #[allow(dead_code)]
     #[error("not yet implemented")]
     NotYetImplemented,
