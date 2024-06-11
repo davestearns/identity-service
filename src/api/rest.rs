@@ -17,18 +17,17 @@ use crate::{
 
 use super::{error::ApiError, models::AuthenticateRequest};
 
-// TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
 const ACCOUNTS_RESOURCE: &str = "/accounts";
 const SESSIONS_RESOURCE: &str = "/sessions";
 
 struct AppState {
-    accounts_service: AccountService,
+    account_service: AccountService,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router(accounts_service: AccountService) -> Router {
-    let shared_state = Arc::new(AppState { accounts_service });
+pub fn router(account_service: AccountService) -> Router {
+    let shared_state = Arc::new(AppState { account_service });
 
     Router::new()
         .route("/", get(get_root))
@@ -48,7 +47,7 @@ async fn post_accounts(
 ) -> Result<Json<AccountResponse>, ApiError> {
     Ok(Json(
         app_state
-            .accounts_service
+            .account_service
             .create_account(&new_account_request.into())
             .await?
             .into(),
@@ -61,7 +60,7 @@ async fn post_tokens(
 ) -> Result<Json<AccountResponse>, ApiError> {
     Ok(Json(
         app_state
-            .accounts_service
+            .account_service
             .authenticate(&account_credentials.into())
             .await?
             .into(),
