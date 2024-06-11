@@ -33,7 +33,7 @@ The architecture is divided into three layers:
 ```mermaid
 flowchart TD;
     API --> Service;
-    Serivce --> Store
+    Serivce --> Store;
     Store --> Database[(Database)];
 ```
 
