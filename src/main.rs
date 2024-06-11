@@ -20,19 +20,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
     // Connect to database and construct the account service
-    let postgres_url =
-        env::var("POSTGRES_URL").expect("Set the POSTGRES_URL environment variable.");
+    let postgres_url = env::var("POSTGRES_URL").map_err(|_| StartupError::PostgresUrlNotSet)?;
     let account_store = PostgresAccountStore::new(&postgres_url, 10).await?;
     let account_service = AccountService::new(account_store);
     let rest_router = api::rest::router(account_service);
 
     // Listen on requested address
     let addr = env::var("ADDR").map_err(|_| StartupError::AddrNotSet)?;
-    let listener = tokio::net::TcpListener::bind(addr.clone())
+    let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("Failed to listen on port");
 
-    println!("Service is listening on {}", addr);
+    tracing::info!("Service is listening on {}", &addr);
     axum::serve(listener, rest_router).await?;
 
     Ok(())
