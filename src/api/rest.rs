@@ -114,6 +114,7 @@ mod tests {
         response.assert_status_ok();
         let response_account: AccountResponse = response.json();
         assert!(!response_account.id.is_empty());
+        assert!(response_account.id.starts_with("acct_"));
         assert_eq!(new_account_request.email, response_account.email);
         assert_eq!(
             new_account_request.display_name,

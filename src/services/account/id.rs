@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum ID {
-    Account,
+    Acct,
 }
 
 impl ID {
