@@ -29,12 +29,7 @@ impl AccountsService {
         &self,
         new_account: &NewAccount,
     ) -> Result<Account, AccountsServiceError> {
-        if new_account.email.trim().is_empty() {
-            return Err(AccountsServiceError::EmptyEmail);
-        }
-        if new_account.password.is_empty() {
-            return Err(AccountsServiceError::EmptyPassword);
-        }
+        new_account.validate()?;
         let argon2 = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = argon2.hash_password(new_account.password.as_bytes(), &salt)?;
