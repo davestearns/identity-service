@@ -28,15 +28,10 @@ A caller such as an API gateway could use these APIs to support sign-up/in. Duri
 
 The architecture and code organization I used might be a tad overkill for such a simple service, but I wanted to work out an approach that could scale up to large monoliths with several internal but isolated services, and multiple types of APIs (REST, gRPC, WebSockets, GraphQL, etc).
 
-The architecture is divided into three layers:
-
-```mermaid
-flowchart TD;
-    API --> Service --> Store --> Database[(Database)];
-```
-
-Lower layers have not knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs.
+The architecture is divided into layers:
 
 - **API Layer:** This is a relatively thin layer that is responsible only for the semantics of the API protocol and contract--all the real work happens in the service layer. For example, the API layer is concerned with things like JSON \[de]serialization and HTTP status codes, but not data validation, business logic, or data storage. This layer defines models for API requests and responses, but those are separate from those defined at the Service layer so that the APIs can evolve independently of the services. This layer can support multiple kinds of APIs at the same time (REST, gRPC, WebSockets, etc) each of which interacts with the same set of internal services.
 - ***Service Layer:** Responsible for enforcing all the business logic and interacting with the data stores. This layer can include multiple services, but they remain isolated from each other so that services can ensure data integrity and do intelligent caching. For example, if service A wants data from service B, it must go through the public service B interface, and not directly to the service's data store.
-- **Store Layer:** Responsible only for data storage and retrieval. This is a relatively thin layer that simply interacts with the database to insert, update, delete, and read data. Each service typically defines a [trait](https://doc.rust-lang.org/book/ch10-02-traits.html) for its data store, which can be implemented for different kinds of databases (e.g., PostgreSQL, MongoDB, DynamoDB, etc) as well as a fake for unit testing.
+- **Store Layer:** Responsible only for data storage and retrieval. This is a relatively thin layer that simply interacts with the database to insert, update, delete, and read data. Each service typically defines a [trait](./src/services/account/store.rs) for its data store, which can be implemented for different kinds of databases (e.g., PostgreSQL, MongoDB, DynamoDB, Aurora, Spanner, etc). This trait is also implemented on a [fake](./src/services/account/store/fake.rs) for unit testing.
+
+Lower layers have not knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs, but do necessarily know about the Database they are talking to.
