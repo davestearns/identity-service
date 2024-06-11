@@ -32,9 +32,7 @@ The architecture is divided into three layers:
 
 ```mermaid
 flowchart TD;
-    API --> Service;
-    Serivce --> Store;
-    Store --> Database[(Database)];
+    API --> Service --> Store --> Database[(Database)];
 ```
 
 Lower layers have not knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs.
