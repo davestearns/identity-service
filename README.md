@@ -31,7 +31,7 @@ The architecture and code organization I used might be a tad overkill for such a
 The architecture is divided into three layers:
 
 ```mermaid
-flowchart graph TD;
+flowchart TD;
     API --> Service;
     Serivce --> Store
     Store --> Database[(Database)];
