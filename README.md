@@ -51,7 +51,7 @@ Make sure the container didn't exit with an error by either looking at the Docke
 To run the service, run these commands in the same terminal where you set the `POSTGRES_PASSWORD` environment variable:
 
 ```bash
-export ADDR=127.0.0.1:3000
+export REST_ADDR=127.0.0.1:3000
 export POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@localhost
 cargo run
 ```

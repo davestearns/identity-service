@@ -26,14 +26,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(DEFAULT_POSTGRES_MAX_CONNS.to_string())
         .trim()
         .parse()?;
-    tracing::info!("Creating a connection pool with a max of {} database connections", max_db_conns);
+    tracing::info!(
+        "Creating a connection pool with a max of {} database connections",
+        max_db_conns
+    );
     tracing::info!("Connecting to the database...");
     let account_store = PostgresAccountStore::new(&postgres_url, max_db_conns).await?;
     let account_service = AccountService::new(account_store);
     let rest_router = api::rest::router(account_service);
 
     // Listen on requested address
-    let addr = env::var("ADDR").map_err(|_| StartupError::AddrNotSet)?;
+    let addr = env::var("REST_ADDR").map_err(|_| StartupError::RestAddrNotSet)?;
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("Failed to listen on port");
