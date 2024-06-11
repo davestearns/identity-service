@@ -33,9 +33,6 @@ impl From<AccountStoreError> for AccountsServiceError {
             AccountStoreError::EmailAlreadyExists(email) => {
                 AccountsServiceError::EmailAlreadyExists(email)
             }
-            // Map EmailNotFound to the more generic InvalidCredentials so we
-            // don't let an attacker know which part of the credentials were incorrect.
-            AccountStoreError::EmailNotFound(_) => AccountsServiceError::InvalidCredentials,
             _ => Self::StoreError(value),
         }
     }

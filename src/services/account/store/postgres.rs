@@ -59,8 +59,8 @@ impl AccountStore for PostgresAccountStore {
             .map(|_| ())
     }
 
-    async fn load_by_email(&self, email: &str) -> Result<Account, AccountStoreError> {
-        let maybe_account = sqlx::query(
+    async fn load_by_email(&self, email: &str) -> Result<Option<Account>, AccountStoreError> {
+        Ok(sqlx::query(
             "select id,email,password_hash,display_name,created_at \
         from accounts where email=$1",
         )
@@ -73,11 +73,6 @@ impl AccountStore for PostgresAccountStore {
             created_at: row.get(4),
         })
         .fetch_optional(&self.pool)
-        .await?;
-
-        match maybe_account {
-            Some(account) => Ok(account),
-            None => Err(AccountStoreError::EmailNotFound(email.to_string())),
-        }
+        .await?)
     }
 }

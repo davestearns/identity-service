@@ -32,12 +32,12 @@ impl AccountStore for FakeAccountStore {
         }
     }
 
-    async fn load_by_email(&self, email: &str) -> Result<Account, AccountStoreError> {
+    async fn load_by_email(&self, email: &str) -> Result<Option<Account>, AccountStoreError> {
         match self.email_to_id.get(email) {
-            None => Err(AccountStoreError::EmailNotFound(email.to_string())),
+            None => Ok(None),
             Some(id) => match self.accounts.get(id.value()) {
-                None => Err(AccountStoreError::EmailNotFound(email.to_string())),
-                Some(accounts_entry) => Ok(accounts_entry.value().clone()),
+                None => Ok(None),
+                Some(accounts_entry) => Ok(Some(accounts_entry.value().clone())),
             },
         }
     }

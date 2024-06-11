@@ -14,6 +14,9 @@ pub mod id;
 pub mod models;
 pub mod store;
 
+const BOGUS_ARGON2_HASH: &str =
+    "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
+
 pub struct AccountService {
     store: Box<dyn AccountStore>,
 }
@@ -56,11 +59,29 @@ impl AccountService {
         &self,
         credentials: &AccountCredentials,
     ) -> Result<Account, AccountsServiceError> {
-        let account = self.store.load_by_email(&credentials.email).await?;
-        let parsed_hash = PasswordHash::new(&account.password_hash)?;
-        match Argon2::default().verify_password(credentials.password.as_bytes(), &parsed_hash) {
-            Err(_) => Err(AccountsServiceError::InvalidCredentials),
-            Ok(_) => Ok(account),
+        match self.store.load_by_email(&credentials.email).await? {
+            None => {
+                // To mitigate a timing attack, verify a bogus password but
+                // ignore the results so that the API takes about the same duration
+                // as it would if the email address was found.
+                let bogus_hash = PasswordHash::new(BOGUS_ARGON2_HASH)?;
+                let _ = Self::validate_password("bogus", &bogus_hash.to_string());
+                Err(AccountsServiceError::InvalidCredentials)
+            }
+            Some(account) => {
+                match Self::validate_password(&credentials.password, &account.password_hash) {
+                    Err(_) => Err(AccountsServiceError::InvalidCredentials),
+                    Ok(_) => Ok(account),
+                }
+            }
         }
+    }
+
+    fn validate_password(
+        password: &str,
+        password_hash: &str,
+    ) -> Result<(), argon2::password_hash::Error> {
+        let parsed_hash = PasswordHash::new(password_hash)?;
+        Argon2::default().verify_password(password.as_bytes(), &parsed_hash)
     }
 }
