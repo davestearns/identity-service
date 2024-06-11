@@ -64,8 +64,7 @@ impl AccountService {
                 // To mitigate a timing attack, verify a bogus password but
                 // ignore the results so that the API takes about the same duration
                 // as it would if the email address was found.
-                let bogus_hash = PasswordHash::new(BOGUS_ARGON2_HASH)?;
-                let _ = Self::validate_password("bogus", &bogus_hash.to_string());
+                let _ = Self::validate_password("bogus", BOGUS_ARGON2_HASH);
                 Err(AccountsServiceError::InvalidCredentials)
             }
             Some(account) => {
