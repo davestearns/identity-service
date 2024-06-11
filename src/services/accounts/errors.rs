@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::stores::errors::AccountsStoreError;
+use super::stores::errors::AccountsStoreError;
 
 #[derive(Error, Debug)]
 pub enum AccountsServiceError {

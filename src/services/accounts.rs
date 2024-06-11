@@ -7,11 +7,12 @@ use errors::AccountsServiceError;
 use ids::ID;
 use models::{Account, NewAccount};
 
-use crate::stores::AccountsStore;
+use stores::AccountsStore;
 
 pub mod errors;
 pub mod ids;
 pub mod models;
+pub mod stores;
 
 pub struct AccountsService {
     store: Box<dyn AccountsStore>,

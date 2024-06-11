@@ -99,8 +99,8 @@ mod tests {
     use axum_test::TestServer;
 
     use crate::{
-        api::models::ApiErrorResponse, services::accounts::AccountsService,
-        stores::fake::FakeAccountsStore,
+        api::models::ApiErrorResponse, services::accounts::stores::fake::FakeAccountsStore,
+        services::accounts::AccountsService,
     };
 
     use super::*;

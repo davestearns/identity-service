@@ -1,13 +1,11 @@
 mod api;
 mod errors;
 mod services;
-mod stores;
 
 use dotenvy::dotenv;
 use errors::StartupError;
-use services::accounts::AccountsService;
+use services::accounts::{stores::postgres::PostgresAccountsStore, AccountsService};
 use std::{env, error::Error, str::FromStr};
-use stores::postgres::PostgresAccountsStore;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
