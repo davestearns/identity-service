@@ -5,3 +5,4 @@
 pub mod models;
 pub mod rest;
 pub mod error;
+pub mod converters;

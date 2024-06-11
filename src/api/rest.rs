@@ -12,64 +12,13 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     api::models::{AccountResponse, NewAccountRequest},
-    services::account::{
-        error::AccountsServiceError,
-        models::{Account, AccountCredentials, NewAccount},
-        AccountService,
-    },
+    services::account::AccountService,
 };
 
 use super::{error::ApiError, models::AuthenticateRequest};
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
-
-/// Converts [AccountsServiceError] instances into [ApiError] instances
-impl From<AccountsServiceError> for ApiError {
-    fn from(value: AccountsServiceError) -> Self {
-        match value {
-            AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
-            AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
-            AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
-            AccountsServiceError::EmptyEmail
-            | AccountsServiceError::EmptyPassword
-            | AccountsServiceError::EmailAlreadyExists(_)
-            | AccountsServiceError::InvalidCredentials => ApiError::BadRequest(value.to_string()),
-        }
-    }
-}
-
-/// Converts the API [NewAccountRequest] model to an [Account] model.
-impl From<NewAccountRequest> for NewAccount {
-    fn from(value: NewAccountRequest) -> Self {
-        NewAccount {
-            email: value.email,
-            password: value.password,
-            display_name: value.display_name,
-        }
-    }
-}
-
-/// Converts [Account] model to an API [AccountResponse]
-impl From<Account> for AccountResponse {
-    fn from(value: Account) -> Self {
-        AccountResponse {
-            id: value.id,
-            email: value.email,
-            display_name: value.display_name,
-            created_at: value.created_at,
-        }
-    }
-}
-
-impl From<AuthenticateRequest> for AccountCredentials {
-    fn from(value: AuthenticateRequest) -> Self {
-        AccountCredentials {
-            email: value.email,
-            password: value.password,
-        }
-    }
-}
 
 struct AppState {
     accounts_service: AccountService,
