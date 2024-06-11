@@ -1,21 +1,6 @@
-use crate::services::account::{error::AccountsServiceError, models::{Account, AccountCredentials, NewAccount}};
+use crate::services::account::models::{Account, AccountCredentials, NewAccount};
 
-use super::{error::ApiError, models::{AccountResponse, AuthenticateRequest, NewAccountRequest}};
-
-/// Converts [AccountsServiceError] instances into [ApiError] instances
-impl From<AccountsServiceError> for ApiError {
-    fn from(value: AccountsServiceError) -> Self {
-        match value {
-            AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
-            AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
-            AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
-            AccountsServiceError::EmptyEmail
-            | AccountsServiceError::EmptyPassword
-            | AccountsServiceError::EmailAlreadyExists(_)
-            | AccountsServiceError::InvalidCredentials => ApiError::BadRequest(value.to_string()),
-        }
-    }
-}
+use super::models::{AccountResponse, AuthenticateRequest, NewAccountRequest};
 
 /// Converts the API [NewAccountRequest] model to an [Account] model.
 impl From<NewAccountRequest> for NewAccount {

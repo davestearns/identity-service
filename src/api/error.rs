@@ -3,6 +3,8 @@ use axum::response::IntoResponse;
 use axum::Json;
 use thiserror::Error;
 
+use crate::services::account::error::AccountsServiceError;
+
 use super::models::ApiErrorResponse;
 
 /// Represents an error returned by one of the API handlers.
@@ -32,5 +34,20 @@ impl IntoResponse for ApiError {
         };
 
         (status, Json(body)).into_response()
+    }
+}
+
+/// Converts [AccountsServiceError] instances into [ApiError] instances
+impl From<AccountsServiceError> for ApiError {
+    fn from(value: AccountsServiceError) -> Self {
+        match value {
+            AccountsServiceError::NotYetImplemented => ApiError::NotYetImplemented,
+            AccountsServiceError::PasswordHashingError(err) => ApiError::Internal(err.to_string()),
+            AccountsServiceError::StoreError(err) => ApiError::Internal(err.to_string()),
+            AccountsServiceError::EmptyEmail
+            | AccountsServiceError::EmptyPassword
+            | AccountsServiceError::EmailAlreadyExists(_)
+            | AccountsServiceError::InvalidCredentials => ApiError::BadRequest(value.to_string()),
+        }
     }
 }
