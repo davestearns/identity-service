@@ -9,4 +9,6 @@ pub enum AccountStoreError {
     DatabaseError(String),
     #[error("email '{0}' already exists")]
     EmailAlreadyExists(String),
+    #[error("email '{0} not found")]
+    EmailNotFound(String),
 }

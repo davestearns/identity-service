@@ -1,7 +1,10 @@
 //! Implements [AccountStore] backed by a PostgreSQL database
 
 use axum::async_trait;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{
+    postgres::{PgPoolOptions, PgRow},
+    PgPool, Row,
+};
 
 use crate::services::account::models::Account;
 
@@ -54,5 +57,27 @@ impl AccountStore for PostgresAccountStore {
                 _ => AccountStoreError::DatabaseError(err.to_string()),
             })
             .map(|_| ())
+    }
+
+    async fn load_by_email(&self, email: &str) -> Result<Account, AccountStoreError> {
+        let maybe_account = sqlx::query(
+            "select id,email,password_hash,display_name,created_at \
+        from accounts where email=$1",
+        )
+        .bind(email)
+        .map(|row: PgRow| Account {
+            id: row.get(0),
+            email: row.get(1),
+            password_hash: row.get(2),
+            display_name: row.get(3),
+            created_at: row.get(4),
+        })
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match maybe_account {
+            Some(account) => Ok(account),
+            None => Err(AccountStoreError::EmailNotFound(email.to_string())),
+        }
     }
 }

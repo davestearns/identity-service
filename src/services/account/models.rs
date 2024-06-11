@@ -14,7 +14,7 @@ pub struct NewAccount {
 }
 
 impl NewAccount {
-    pub fn validate(&self) -> Result<(), AccountsServiceError> {        
+    pub fn validate(&self) -> Result<(), AccountsServiceError> {
         if self.email.trim().is_empty() {
             return Err(AccountsServiceError::EmptyEmail);
         }
@@ -25,6 +25,7 @@ impl NewAccount {
     }
 }
 
+/// Represents a full account record.
 #[derive(Debug, Clone)]
 pub struct Account {
     /// Unique ID
@@ -37,4 +38,13 @@ pub struct Account {
     pub display_name: Option<String>,
     /// When this account was created.
     pub created_at: DateTime<Utc>,
+}
+
+/// Represents credentials used to authenticate an account when signing in.
+#[derive(Debug)]
+pub struct AccountCredentials {
+    /// Account email address.
+    pub email: String,
+    /// Account password.
+    pub password: String,
 }

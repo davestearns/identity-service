@@ -42,3 +42,11 @@ pub struct AccountResponse {
     /// When this account was created.
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthenticateRequest {
+    /// Account email address.
+    pub email: String,
+    /// Account password.
+    pub password: String,
+}

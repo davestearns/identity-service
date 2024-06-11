@@ -5,7 +5,7 @@ use super::store::error::AccountStoreError;
 #[derive(Error, Debug)]
 pub enum AccountsServiceError {
     #[allow(dead_code)]
-    #[error("not yet implemented")]
+    #[error("This feature is not yet implemented")]
     NotYetImplemented,
     #[error("There was an error hashing the password: {0}")]
     PasswordHashingError(argon2::password_hash::errors::Error),
@@ -17,6 +17,8 @@ pub enum AccountsServiceError {
     EmailAlreadyExists(String),
     #[error("The password may not be empty")]
     EmptyPassword,
+    #[error("The email address or password was incorrect")]
+    InvalidCredentials,
 }
 
 impl From<argon2::password_hash::errors::Error> for AccountsServiceError {
@@ -31,6 +33,7 @@ impl From<AccountStoreError> for AccountsServiceError {
             AccountStoreError::EmailAlreadyExists(email) => {
                 AccountsServiceError::EmailAlreadyExists(email)
             }
+            AccountStoreError::EmailNotFound(_) => AccountsServiceError::InvalidCredentials,
             _ => Self::StoreError(value),
         }
     }

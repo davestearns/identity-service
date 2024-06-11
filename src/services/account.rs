@@ -1,11 +1,11 @@
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
-    Argon2, PasswordHasher,
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
 use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
-use models::{Account, NewAccount};
+use models::{Account, AccountCredentials, NewAccount};
 
 use store::AccountStore;
 
@@ -19,12 +19,14 @@ pub struct AccountService {
 }
 
 impl AccountService {
+    /// Constructs a new [AccountService] given the [AccountStore] to use.
     pub fn new(accounts_store: impl AccountStore + 'static) -> AccountService {
         AccountService {
             store: Box::new(accounts_store),
         }
     }
 
+    /// Creates a new account.
     pub async fn create_account(
         &self,
         new_account: &NewAccount,
@@ -46,5 +48,19 @@ impl AccountService {
         };
         self.store.insert(&account).await?;
         Ok(account)
+    }
+
+    /// Authenticates a set of credentials against a stored account,
+    /// and returns the [Account] if authenitcation is successful.
+    pub async fn authenticate(
+        &self,
+        credentials: &AccountCredentials,
+    ) -> Result<Account, AccountsServiceError> {
+        let account = self.store.load_by_email(&credentials.email).await?;
+        let parsed_hash = PasswordHash::new(&account.password_hash)?;
+        match Argon2::default().verify_password(credentials.password.as_bytes(), &parsed_hash) {
+            Err(_) => Err(AccountsServiceError::InvalidCredentials),
+            Ok(_) => Ok(account),
+        }
     }
 }
