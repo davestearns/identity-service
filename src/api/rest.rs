@@ -19,6 +19,8 @@ use super::{error::ApiError, models::AuthenticateRequest};
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
+const ACCOUNTS_RESOURCE: &str = "/accounts"; 
+const SESSIONS_RESOURCE: &str = "/sessions";
 
 struct AppState {
     accounts_service: AccountService,
@@ -30,8 +32,8 @@ pub fn router(accounts_service: AccountService) -> Router {
 
     Router::new()
         .route("/", get(get_root))
-        .route("/accounts", post(post_accounts))
-        .route("/tokens", post(post_tokens))
+        .route(ACCOUNTS_RESOURCE, post(post_accounts))
+        .route(SESSIONS_RESOURCE, post(post_tokens))
         .with_state(shared_state)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
 }
@@ -108,7 +110,7 @@ mod tests {
     async fn new_account_success() {
         let new_account_request = new_account_request();
         let response = test_server()
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await;
 
@@ -130,7 +132,7 @@ mod tests {
             display_name: None,
         };
         let response = test_server()
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await;
 
@@ -149,7 +151,7 @@ mod tests {
             display_name: None,
         };
         let response = test_server()
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await;
 
@@ -168,7 +170,7 @@ mod tests {
 
         // insert the account
         server
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
             .assert_status_ok();
@@ -188,7 +190,7 @@ mod tests {
         let new_account_request = new_account_request();
         let server = test_server();
         server
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
             .assert_status_ok();
@@ -197,7 +199,7 @@ mod tests {
             email: new_account_request.email.clone(),
             password: new_account_request.password.clone(),
         };
-        let response = server.post("/tokens").json(&authenticate_request).await;
+        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
         response.assert_status_ok();
         let response_account: AccountResponse = response.json();
         assert_eq!(response_account.email, authenticate_request.email);
@@ -209,7 +211,7 @@ mod tests {
         let new_account_request = new_account_request();
         let server = test_server();
         server
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
             .assert_status_ok();
@@ -218,7 +220,7 @@ mod tests {
             email: new_account_request.email.clone(),
             password: "invalid".to_string(),
         };
-        let response = server.post("/tokens").json(&authenticate_request).await;
+        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
         response.assert_status_bad_request();
         let error_response: ApiErrorResponse = response.json();
         assert_eq!(
@@ -232,7 +234,7 @@ mod tests {
         let new_account_request = new_account_request();
         let server = test_server();
         server
-            .post("/accounts")
+            .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
             .assert_status_ok();
@@ -241,7 +243,7 @@ mod tests {
             email: "invalid".to_string(),
             password: "invalid".to_string(),
         };
-        let response = server.post("/tokens").json(&authenticate_request).await;
+        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
         response.assert_status_bad_request();
         let error_response: ApiErrorResponse = response.json();
         assert_eq!(
