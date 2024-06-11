@@ -20,9 +20,9 @@ pub struct AccountService {
 
 impl AccountService {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
-    pub fn new(accounts_store: impl AccountStore + 'static) -> AccountService {
+    pub fn new(account_store: impl AccountStore + 'static) -> AccountService {
         AccountService {
-            store: Box::new(accounts_store),
+            store: Box::new(account_store),
         }
     }
 

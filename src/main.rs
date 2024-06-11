@@ -22,9 +22,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Connect to database and construct the account service
     let postgres_url =
         env::var("POSTGRES_URL").expect("Set the POSTGRES_URL environment variable.");
-    let accounts_store = PostgresAccountStore::new(&postgres_url, 10).await?;
-    let accounts_service = AccountService::new(accounts_store);
-    let rest_router = api::rest::router(accounts_service);
+    let account_store = PostgresAccountStore::new(&postgres_url, 10).await?;
+    let account_service = AccountService::new(account_store);
+    let rest_router = api::rest::router(account_service);
 
     // Listen on requested address
     let addr = env::var("ADDR").map_err(|_| StartupError::AddrNotSet)?;

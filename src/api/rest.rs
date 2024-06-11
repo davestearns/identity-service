@@ -19,7 +19,7 @@ use super::{error::ApiError, models::AuthenticateRequest};
 
 // TODO: replace this with something more helpful
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
-const ACCOUNTS_RESOURCE: &str = "/accounts"; 
+const ACCOUNTS_RESOURCE: &str = "/accounts";
 const SESSIONS_RESOURCE: &str = "/sessions";
 
 struct AppState {
@@ -80,9 +80,7 @@ mod tests {
     use super::*;
 
     fn test_server() -> TestServer {
-        let accounts_store = FakeAccountStore::new();
-        let accounts_service = AccountService::new(accounts_store);
-        TestServer::new(router(accounts_service)).unwrap()
+        TestServer::new(router(AccountService::new(FakeAccountStore::new()))).unwrap()
     }
 
     fn new_account_request() -> NewAccountRequest {
@@ -199,7 +197,10 @@ mod tests {
             email: new_account_request.email.clone(),
             password: new_account_request.password.clone(),
         };
-        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
+        let response = server
+            .post(SESSIONS_RESOURCE)
+            .json(&authenticate_request)
+            .await;
         response.assert_status_ok();
         let response_account: AccountResponse = response.json();
         assert_eq!(response_account.email, authenticate_request.email);
@@ -220,7 +221,10 @@ mod tests {
             email: new_account_request.email.clone(),
             password: "invalid".to_string(),
         };
-        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
+        let response = server
+            .post(SESSIONS_RESOURCE)
+            .json(&authenticate_request)
+            .await;
         response.assert_status_bad_request();
         let error_response: ApiErrorResponse = response.json();
         assert_eq!(
@@ -243,7 +247,10 @@ mod tests {
             email: "invalid".to_string(),
             password: "invalid".to_string(),
         };
-        let response = server.post(SESSIONS_RESOURCE).json(&authenticate_request).await;
+        let response = server
+            .post(SESSIONS_RESOURCE)
+            .json(&authenticate_request)
+            .await;
         response.assert_status_bad_request();
         let error_response: ApiErrorResponse = response.json();
         assert_eq!(
