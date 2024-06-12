@@ -17,19 +17,26 @@ pub mod store;
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
 
-type NowProvider = fn() -> DateTime<Utc>;
+type NowProvider = dyn Fn() -> DateTime<Utc> + Send + Sync;
 
 pub struct AccountService {
     store: Box<dyn AccountStore>,
-    now_provider: NowProvider,
+    now_provider: Box<NowProvider>,
 }
 
 impl AccountService {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
     pub fn new(account_store: impl AccountStore + 'static) -> AccountService {
+        Self::new_with_now_provider(account_store, Utc::now)
+    }
+
+    pub fn new_with_now_provider(
+        account_store: impl AccountStore + 'static,
+        now_provider: impl Fn() -> DateTime<Utc> + Send + Sync + 'static,
+    ) -> AccountService {
         AccountService {
             store: Box::new(account_store),
-            now_provider: Utc::now,
+            now_provider: Box::new(now_provider),
         }
     }
 
@@ -105,5 +112,31 @@ impl AccountService {
     ) -> Result<(), argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(password_hash)?;
         Argon2::default().verify_password(password.as_bytes(), &parsed_hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use store::fake::FakeAccountStore;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn create_account() {
+        let store = FakeAccountStore::new();
+        let now = Utc::now();
+        let now_provider = move || now;
+        let service = AccountService::new_with_now_provider(store, now_provider);
+        let new_account = NewAccount {
+            email: "test@test.com".to_string(),
+            password: "test-password".to_string(),
+            display_name: Some("Tester McTester".to_string()),
+        };
+        let account = service.create_account(&new_account).await.unwrap();
+
+        assert_eq!(new_account.email, account.email);
+        assert_eq!(new_account.display_name, account.display_name);
+        assert_ne!(new_account.password, account.password_hash);
+        assert_eq!(now, account.created_at);
     }
 }
