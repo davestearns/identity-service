@@ -50,3 +50,19 @@ pub struct AuthenticateRequest {
     /// Account password.
     pub password: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NewCredentialsRequest {
+    /// New password.
+    pub password: String,
+    /// Optional new email address.
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateCredentialsRequest {
+    /// The existing credentials.
+    pub old: AuthenticateRequest,
+    /// The new credentials.
+    pub new: NewCredentialsRequest,
+}

@@ -48,3 +48,11 @@ pub struct AccountCredentials {
     /// Account password.
     pub password: String,
 }
+
+#[derive(Debug)]
+pub struct NewAccountCredentials {
+    /// The new password.
+    pub password: String,
+    /// Optional new email address.
+    pub email: Option<String>,
+}

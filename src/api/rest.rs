@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Json, State},
-    routing::{get, post},
+    extract::{Json, Path, State},
+    routing::{get, post, put},
     Router,
 };
 use tower::ServiceBuilder;
@@ -15,10 +15,14 @@ use crate::{
     services::account::AccountService,
 };
 
-use super::{error::ApiError, models::AuthenticateRequest};
+use super::{
+    error::ApiError,
+    models::{AuthenticateRequest, UpdateCredentialsRequest},
+};
 
 const ROOT_RESPONSE: &str = "Welcome to the identity service!";
 const ACCOUNTS_RESOURCE: &str = "/accounts";
+const CREDENTIALS_RESOURCE: &str = "/accounts/:id/credentials";
 const SESSIONS_RESOURCE: &str = "/sessions";
 
 struct AppState {
@@ -32,6 +36,7 @@ pub fn router(account_service: AccountService) -> Router {
     Router::new()
         .route("/", get(get_root))
         .route(ACCOUNTS_RESOURCE, post(post_accounts))
+        .route(CREDENTIALS_RESOURCE, put(put_credentials))
         .route(SESSIONS_RESOURCE, post(post_tokens))
         .with_state(shared_state)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
@@ -67,13 +72,28 @@ async fn post_tokens(
     ))
 }
 
+async fn put_credentials(
+    State(app_state): State<Arc<AppState>>,
+    Path(_): Path<String>,
+    Json(update_credentials): Json<UpdateCredentialsRequest>,
+) -> Result<Json<AccountResponse>, ApiError> {
+    let account = app_state
+        .account_service
+        .update_credentials(
+            &update_credentials.old.into(),
+            &update_credentials.new.into(),
+        )
+        .await?;
+    Ok(Json(account.into()))
+}
+
 #[cfg(test)]
 mod tests {
     use axum_test::TestServer;
 
     use crate::{
-        api::models::ApiErrorResponse, services::account::store::fake::FakeAccountStore,
-        services::account::AccountService,
+        api::models::{ApiErrorResponse, NewCredentialsRequest},
+        services::account::{store::fake::FakeAccountStore, AccountService},
     };
 
     use super::*;
@@ -256,6 +276,58 @@ mod tests {
         assert_eq!(
             error_response.message,
             "The email address or password was incorrect".to_string()
+        );
+    }
+
+    #[tokio::test]
+    async fn update_credentials() {
+        let new_account_request = new_account_request();
+        let server = test_server();
+        server
+            .post(ACCOUNTS_RESOURCE)
+            .json(&new_account_request)
+            .await
+            .assert_status_ok();
+
+        let new_password = format!("{}-updated", &new_account_request.password);
+        let update_credentials_request = UpdateCredentialsRequest {
+            old: AuthenticateRequest {
+                email: new_account_request.email.clone(),
+                password: new_account_request.password.clone(),
+            },
+            new: NewCredentialsRequest {
+                password: new_password.clone(),
+                email: None,
+            },
+        };
+
+        let update_response = server
+            .put(CREDENTIALS_RESOURCE)
+            .json(&update_credentials_request)
+            .await;
+
+        update_response.assert_status_ok();
+        let update_response_account: AccountResponse = update_response.json();
+        assert_eq!(new_account_request.email, update_response_account.email);
+        assert_eq!(
+            new_account_request.display_name,
+            update_response_account.display_name
+        );
+
+        let authenticate_request = AuthenticateRequest {
+            email: new_account_request.email.clone(),
+            password: new_password.clone(),
+        };
+
+        let authenticate_response = server
+            .post(SESSIONS_RESOURCE)
+            .json(&authenticate_request)
+            .await;
+        authenticate_response.assert_status_ok();
+        let authenticate_response_account: AccountResponse = authenticate_response.json();
+        assert_eq!(
+            authenticate_response_account.email,
+            authenticate_request.email
         );
     }
 }

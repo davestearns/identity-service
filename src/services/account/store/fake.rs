@@ -41,4 +41,10 @@ impl AccountStore for FakeAccountStore {
             },
         }
     }
+
+    async fn update(&self, account: &Account) -> Result<(), AccountStoreError> {
+        self.accounts.insert(account.id.clone(), account.clone());
+        self.email_to_id.insert(account.email.clone(), account.id.clone());
+        Ok(())
+    }
 }

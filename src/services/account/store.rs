@@ -12,4 +12,5 @@ use crate::services::account::models::Account;
 pub trait AccountStore: Send + Sync {
     async fn insert(&self, account: &Account) -> Result<(), AccountStoreError>;
     async fn load_by_email(&self, email: &str) -> Result<Option<Account>, AccountStoreError>;
+    async fn update(&self, account: &Account) -> Result<(), AccountStoreError>;
 }

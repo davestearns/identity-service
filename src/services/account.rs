@@ -5,7 +5,7 @@ use argon2::{
 use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
-use models::{Account, AccountCredentials, NewAccount};
+use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
 
 use store::AccountStore;
 
@@ -74,6 +74,25 @@ impl AccountService {
                 }
             }
         }
+    }
+
+    pub async fn update_credentials(
+        &self,
+        current_credentials: &AccountCredentials,
+        new_credentials: &NewAccountCredentials,
+    ) -> Result<Account, AccountsServiceError> {
+        let mut account = self.authenticate(current_credentials).await?;
+        let salt = SaltString::generate(&mut OsRng);
+        let new_password_hash =
+            Argon2::default().hash_password(new_credentials.password.as_bytes(), &salt)?;
+
+        account.password_hash = new_password_hash.to_string();
+        if let Some(new_email) = &new_credentials.email {
+            account.email = new_email.clone();
+        }
+
+        self.store.update(&account).await?;
+        Ok(account)
     }
 
     fn validate_password(

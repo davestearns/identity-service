@@ -75,4 +75,16 @@ impl AccountStore for PostgresAccountStore {
         .fetch_optional(&self.pool)
         .await?)
     }
+
+    async fn update(&self, account: &Account) -> Result<(), AccountStoreError> {
+        sqlx::query("update accounts set email=$1,password_hash=$2,display_name=$3 where id=$4")
+            .bind(&account.email)
+            .bind(&account.password_hash)
+            .bind(&account.display_name)
+            .bind(&account.id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
 }

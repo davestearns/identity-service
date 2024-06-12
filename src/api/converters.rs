@@ -1,6 +1,8 @@
-use crate::services::account::models::{Account, AccountCredentials, NewAccount};
+use crate::services::account::models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
 
-use super::models::{AccountResponse, AuthenticateRequest, NewAccountRequest};
+use super::models::{
+    AccountResponse, AuthenticateRequest, NewAccountRequest, NewCredentialsRequest,
+};
 
 /// Converts the API [NewAccountRequest] model to an [Account] model.
 impl From<NewAccountRequest> for NewAccount {
@@ -31,6 +33,15 @@ impl From<AuthenticateRequest> for AccountCredentials {
         AccountCredentials {
             email: value.email,
             password: value.password,
+        }
+    }
+}
+
+impl From<NewCredentialsRequest> for NewAccountCredentials {
+    fn from(value: NewCredentialsRequest) -> Self {
+        NewAccountCredentials {
+            password: value.password,
+            email: value.email,
         }
     }
 }
