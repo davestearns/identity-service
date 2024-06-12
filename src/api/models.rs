@@ -43,6 +43,7 @@ pub struct AccountResponse {
     pub created_at: DateTime<Utc>,
 }
 
+/// Represents an authentication API request body.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthenticateRequest {
     /// Account email address.
@@ -51,6 +52,7 @@ pub struct AuthenticateRequest {
     pub password: String,
 }
 
+/// Represents a set of new credentials (used in [UpdateCredentialsRequest]).
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewCredentialsRequest {
     /// New password.
@@ -59,6 +61,7 @@ pub struct NewCredentialsRequest {
     pub email: Option<String>,
 }
 
+/// Represents an update credentials API request body.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateCredentialsRequest {
     /// The existing credentials.

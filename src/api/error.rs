@@ -10,14 +10,17 @@ use super::models::ApiErrorResponse;
 /// Represents an error returned by one of the API handlers.
 #[derive(Error, Debug)]
 pub enum ApiError {
-    #[error("not yet implemented")]
+    #[error("This API is not yet implemented")]
     NotYetImplemented,
-    #[error("internal error: {0}")]
+    #[error("The service encountered an unexpected error: {0}")]
     Internal(String),
-    #[error("bad request: {0}")]
+    #[error("There was a problem with your request: {0}")]
     BadRequest(String),
 }
 
+/// Converts an [ApiError] into an [axum::response::Response].
+/// This is what determines the status code and message that will be
+/// written in the response.
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let (status, message) = match &self {
@@ -37,7 +40,9 @@ impl IntoResponse for ApiError {
     }
 }
 
-/// Converts [AccountsServiceError] instances into [ApiError] instances
+/// Converts [AccountsServiceError] instances into [ApiError] instances.
+/// This determines the mapping from the service-level error into the
+/// API-level error.
 impl From<AccountsServiceError> for ApiError {
     fn from(value: AccountsServiceError) -> Self {
         match value {

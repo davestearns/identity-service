@@ -1,4 +1,11 @@
-use crate::services::account::models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
+//! This module contains various `From<...>` trait implementations that convert
+//! between API-level and service-level models. This allows the API code to use
+//! ergonomic syntax like `.into()` to convert between the model types.
+//! Keeping the model types separate allows the API to evolve independently from
+//! the services.
+use crate::services::account::models::{
+    Account, AccountCredentials, NewAccount, NewAccountCredentials,
+};
 
 use super::models::{
     AccountResponse, AuthenticateRequest, NewAccountRequest, NewCredentialsRequest,
@@ -37,6 +44,8 @@ impl From<AuthenticateRequest> for AccountCredentials {
     }
 }
 
+/// Converts the API [NewCredentialsRequest] model to a
+/// serice [NewAccountCredentials] model.
 impl From<NewCredentialsRequest> for NewAccountCredentials {
     fn from(value: NewCredentialsRequest) -> Self {
         NewAccountCredentials {

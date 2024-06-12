@@ -8,7 +8,8 @@ use axum::{
     Router,
 };
 use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 use crate::{
     api::models::{AccountResponse, NewAccountRequest},
@@ -25,13 +26,23 @@ const ACCOUNTS_RESOURCE: &str = "/accounts";
 const CREDENTIALS_RESOURCE: &str = "/accounts/:id/credentials";
 const SESSIONS_RESOURCE: &str = "/sessions";
 
+/// Application state that can be accessed by any route handler.
+/// Note that this doesn't need `#[derive(Clone)]` because we will
+/// put this into an [Arc] and [Arc] already supports [Clone].
 struct AppState {
     account_service: AccountService,
 }
 
 /// Returns the Axum Router for the REST API
 pub fn router(account_service: AccountService) -> Router {
+    // wrap the AppState in an [Arc] since it will be shared between threads
     let shared_state = Arc::new(AppState { account_service });
+
+    // By default, TraceLayer traces at DEBUG level, which is probably too low
+    // for runtime. This configures it to trace at INFO level instead.
+    let trace_layer = TraceLayer::new_for_http()
+        .on_request(DefaultOnRequest::new().level(Level::INFO))
+        .on_response(DefaultOnResponse::new().level(Level::INFO));
 
     Router::new()
         .route("/", get(get_root))
@@ -39,7 +50,7 @@ pub fn router(account_service: AccountService) -> Router {
         .route(CREDENTIALS_RESOURCE, put(put_credentials))
         .route(SESSIONS_RESOURCE, post(post_tokens))
         .with_state(shared_state)
-        .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
+        .layer(ServiceBuilder::new().layer(trace_layer))
 }
 
 async fn get_root() -> &'static str {
@@ -50,26 +61,31 @@ async fn post_accounts(
     State(app_state): State<Arc<AppState>>,
     Json(new_account_request): Json<NewAccountRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
-    Ok(Json(
-        app_state
-            .account_service
-            .create_account(&new_account_request.into())
-            .await?
-            .into(),
-    ))
+    // If the account service returns an Err result,
+    // the ? syntax after await will cause this method
+    // to return early, and convert the AccountServiceError
+    // into an ApiError using the From<...> trait implementation
+    // defined in the converters.rs file.
+    let account = app_state
+        .account_service
+        .create_account(&new_account_request.into())
+        .await?;
+
+    // This `account.into()` converts the service-level Account model
+    // to an API-level AccountResponse model. This works because of the
+    // From<...> trait implementations in converters.rs.
+    Ok(Json(account.into()))
 }
 
 async fn post_tokens(
     State(app_state): State<Arc<AppState>>,
     Json(account_credentials): Json<AuthenticateRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
-    Ok(Json(
-        app_state
-            .account_service
-            .authenticate(&account_credentials.into())
-            .await?
-            .into(),
-    ))
+    let account = app_state
+        .account_service
+        .authenticate(&account_credentials.into())
+        .await?;
+    Ok(Json(account.into()))
 }
 
 async fn put_credentials(
@@ -98,6 +114,7 @@ mod tests {
 
     use super::*;
 
+    /// Constructs a new [TestServer] using a fresh AccountService and FakeAccountStore.
     fn test_server() -> TestServer {
         TestServer::new(router(AccountService::new(FakeAccountStore::new()))).unwrap()
     }

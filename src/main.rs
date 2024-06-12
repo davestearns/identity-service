@@ -20,11 +20,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .map_err(|err| StartupError::InvalidTraceLevel(env_trace_level, err))?;
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
-    // Connect to database and construct the account service
+    // Connect to database and construct the account service with the appropriate account store
     let postgres_url = env::var("POSTGRES_URL").map_err(|_| StartupError::PostgresUrlNotSet)?;
     let max_db_conns: u32 = env::var("POSTGRES_MAX_CONNS")
         .unwrap_or(DEFAULT_POSTGRES_MAX_CONNS.to_string())
-        .trim()
         .parse()?;
     tracing::info!(
         "Creating a connection pool with a max of {} database connections",
