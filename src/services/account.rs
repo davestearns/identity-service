@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
@@ -17,8 +17,11 @@ pub mod store;
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
 
+type NowProvider = fn() -> DateTime<Utc>;
+
 pub struct AccountService {
     store: Box<dyn AccountStore>,
+    now_provider: NowProvider,
 }
 
 impl AccountService {
@@ -26,6 +29,7 @@ impl AccountService {
     pub fn new(account_store: impl AccountStore + 'static) -> AccountService {
         AccountService {
             store: Box::new(account_store),
+            now_provider: Utc::now,
         }
     }
 
@@ -47,7 +51,7 @@ impl AccountService {
                 .display_name
                 .clone()
                 .map(|v| v.trim().to_string()),
-            created_at: Utc::now(),
+            created_at: (self.now_provider)(),
         };
         self.store.insert(&account).await?;
         Ok(account)
