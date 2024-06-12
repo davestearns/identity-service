@@ -125,8 +125,7 @@ mod tests {
     async fn create_account() {
         let store = FakeAccountStore::new();
         let now = Utc::now();
-        let now_provider = move || now;
-        let service = AccountService::new_with_now_provider(store, now_provider);
+        let service = AccountService::new_with_now_provider(store, move || now);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
             password: "test-password".to_string(),
@@ -136,7 +135,8 @@ mod tests {
 
         assert_eq!(new_account.email, account.email);
         assert_eq!(new_account.display_name, account.display_name);
-        assert_ne!(new_account.password, account.password_hash);
         assert_eq!(now, account.created_at);
+        // ensure password was hashed and not stored as plain text!
+        assert_ne!(new_account.password, account.password_hash);
     }
 }
