@@ -1,5 +1,7 @@
 # Simple Rust Identity Service
 
+[![Rust](https://github.com/davestearns/identity-service/actions/workflows/rust.yml/badge.svg)](https://github.com/davestearns/identity-service/actions/workflows/rust.yml)
+
 I wanted to learn how to build a simple yet non-trivial API service in Rust, so this repo contains the code for a simple local-account identity service. It is built using the following frameworks and libraries:
 
 - [tokio](https://docs.rs/tokio/latest/tokio/) for the async runtime
