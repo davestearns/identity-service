@@ -11,8 +11,6 @@ I wanted to learn how to build a simple yet non-trivial API service in Rust, so 
 - [chrono](https://docs.rs/chrono/latest/chrono/) for timestampts
 - [axum-test](https://docs.rs/axum-test/latest/axum_test/) for easier API testing
 
-This service is fully-functional, but for educational purposes only, so it shouldn't be used in a production system without a security review and more testing.
-
 ## APIs
 
 The service implements the following APIs:
@@ -23,19 +21,63 @@ The service implements the following APIs:
 | PUT | /accounts/:id/credentials | Updates account credentials | [UpdateCredentialsRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 | POST | /sessions | Authenticates provided credentials | [AuthenticationRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 
-A caller such as an API gateway could use these APIs to support sign-up/in and updating credentials. During sign-in, the API gateway would use this service to authenticate the credentials, create a new digitally-signed session token, put the account details into a cache like [redis](https://redis.io/) using the session token as the key, and drop the session token as a response cookie. When the API gateway receives a subsequent request containing the cookie, it would validate the token's signature to ensure it wasn't tampered with or forged, and fetch the user profile from the cache if it all checks out.
+A caller such as an API gateway could use these APIs to support basic sign-up/in and updating credentials. During sign-in, the API gateway would use this service to authenticate the credentials, create a new digitally-signed session token, put the account details into a cache like [redis](https://redis.io/) using the session token as the key, and drop the session token as a response cookie. When the API gateway receives a subsequent request containing the cookie, it would validate the token's signature to ensure it wasn't tampered with or forged, and fetch the user profile from the cache if it all checks out.
+
+Although this service is functional, it was built for educational purposes only, so it shouldn't be used in a production system without further modifications and review. Specifically, the following features are not yet implemented:
+
+- Account deactivation
+- Passkeys
+- Audit log with events about updates to accounts
+- Authorizing through other identity providers (e.g., sign in with Google/GitHub/Apple/etc)
+- Runtime metrics via Prometheus or statsd
 
 ## Architecture
 
-The architecture and code organization I used might be a tad overkill for such a simple service, but I wanted to work out an approach that could scale up to large monoliths with several internal but isolated services, supporting multiple types of APIs (REST, gRPC, WebSockets, GraphQL, etc).
+The architecture and code organization I used might be a tad overkill for such a simple service, but I wanted to work out a pattern that could scale up to large monoliths with several internal but isolated services, supporting multiple types of APIs (REST, gRPC, WebSockets, GraphQL, etc).
 
 The architecture is divided into layers:
+
+```
++--------------------------------+
+|              APIs              |
++--------------------------------+
+|                                |
+|            Services            |
+|                                |
++--------------------------------+
+|             Stores             |
++--------------------------------+
+```
 
 - **API Layer:** This is a relatively thin layer that is responsible only for the semantics of the API protocol and contract--all the real work happens in the service layer. For example, the API layer is concerned with things like JSON \[de]serialization and HTTP status codes, but not data validation, business logic, or data storage. This layer defines models for API requests and responses, but those are separate from those defined at the Service layer so that the APIs can evolve independently of the services. This layer can support multiple kinds of APIs at the same time (REST, gRPC, WebSockets, etc) each of which interacts with the same set of internal services.
 - **Service Layer:** There is where all the business logic is enforced and all the significant work gets done. This layer can include multiple services, but they remain isolated from each other so that services can ensure data integrity and do intelligent caching. For example, if service A wants something from service B, it must go through service B's public interface, and not directly to the service's tables in the data store.
 - **Store Layer:** This is a relatively thin layer that simply interacts with the target database to insert, update, delete, and read data. Each service typically defines a [trait](./src/services/account/store.rs) for its data store, which can be implemented for different kinds of databases (e.g., PostgreSQL, MongoDB, DynamoDB, Aurora, Spanner, etc). This trait is also implemented by a [fake](./src/services/account/store/fake.rs) that can be used for unit testing.
 
 Lower layers have no knowledge of the layers above them. For example, Stores have no knowledge of Services or APIs, but do necessarily know about the Database they are talking to.
+
+## Code Organization
+
+Under the `src` directory, the code is divided into `src/api` and `src/servcies`. The former is where all the code for the API layer lives, and the latter contains services and their related stores.
+
+Within a given module, I followed this pattern (using services as an example):
+
+```bash
+src/
+  services.rs     # main module for all services
+  services/
+    account.rs    # AccountService impl
+    errors.rs     # AccountServiceError enum and converters
+    models.rs     # AccountService models
+    store.rs      # AccountStore trait
+    store/
+      error.rs    # AccountStoreError enum
+      postgres.rs # PostgresAccountStore impl
+      fake.rs     # FakeAccountStore impl
+```
+
+Errors and models could, of course, be included in the service implementation file, but I found that splitting them into separate files kept the clutter down. Each `models.rs` mostly contains `struct` definitions, and `error.rs` is just the error enum along with `From<...>` implementations that convert from errors returned from lower layers.
+
+I also used `From<...>` traits to convert between API models to service models. These are defined in the API layer so that the service layer remains ignorant of the API layer models (love how Rust lets you implement a trait on a type defined in a different module!). This allows the API code to simply call `.into()` then it needs to convert to/from a service model. This looks very clean, but there is a tradeoff in readability/discoverability: a new engineer looking at the code might not know why that `.into()` works, and where the associated code is defined. Jump to source doesn't really help since that jumps to the `.into()` method implementation. Perhaps the rust-analyzer plugin in VSCode will someday offer a "Jump to From<...> implementation" command?
 
 ## Local Development
 
