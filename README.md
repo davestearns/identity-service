@@ -7,7 +7,7 @@ I wanted to learn how to build a simple yet non-trivial API service in Rust, so 
 - [tokio](https://docs.rs/tokio/latest/tokio/) for the async runtime
 - [axum](https://docs.rs/axum/latest/axum/) and [tower](https://docs.rs/tower/latest/tower/) for the web framework
 - [sqlx](https://docs.rs/sqlx/latest/sqlx/) for database access 
-- [postgres](https://hub.docker.com/_/postgres) for the runtime database, and [dashmap](https://docs.rs/dashmap/latest/dashmap/) for the test fake
+- [postgres](https://hub.docker.com/_/postgres) for the runtime database
 - [argon2](https://docs.rs/argon2/latest/argon2/) for password hashing
 - [thiserror](https://docs.rs/thiserror/latest/thiserror/) for error types
 - [chrono](https://docs.rs/chrono/latest/chrono/) for timestampts
@@ -61,20 +61,29 @@ Lower layers have no knowledge of the layers above them. For example, Stores hav
 
 Under the `src` directory, the code is divided into `src/api` and `src/servcies`. The former is where all the code for the API layer lives, and the latter contains services and their related stores.
 
-Within a given module, I followed this pattern (using services as an example):
+Rust doesn't seem to have a strong opinion about module names being singular or plural, so I went with the advice given [here](https://users.rust-lang.org/t/pluralization-in-apis-guideline/66233), which says to use singular when there is only one main thing being exported, and plural when there are several.
 
 ```bash
 src/
-  services.rs     # main module for all services
+  main.rs           # main() fn, dependency injection
+  error.rs          # StartupError
+  api.rs            # main module for all APIs
+  api/
+    error.rs        # ApiError
+    converters.rs   # From<...> impls for service models
+    models.rs       # common API models
+    rest.rs         # REST API impl
+  services.rs       # main module for all services
   services/
-    account.rs    # AccountService impl
-    errors.rs     # AccountServiceError enum and converters
-    models.rs     # AccountService models
-    store.rs      # AccountStore trait
-    store/
-      error.rs    # AccountStoreError enum
-      postgres.rs # PostgresAccountStore impl
-      fake.rs     # FakeAccountStore impl
+    account.rs      # AccountService impl
+    account/
+      error.rs      # AccountServiceError enum and converters
+      models.rs     # AccountService models
+      store.rs      # AccountStore trait
+      store/
+        error.rs    # AccountStoreError enum
+        postgres.rs # PostgresAccountStore impl
+        fake.rs     # FakeAccountStore impl
 ```
 
 Errors and models could, of course, be included in the service implementation file, but I found that splitting them into separate files kept the clutter down. Each `models.rs` mostly contains `struct` definitions, and `error.rs` is just the error enum along with `From<...>` implementations that convert from errors returned from lower layers.

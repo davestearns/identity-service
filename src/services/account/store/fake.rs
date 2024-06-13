@@ -1,22 +1,58 @@
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use axum::async_trait;
-use dashmap::DashMap;
 
 use crate::services::account::models::Account;
 
 use super::{error::AccountStoreError, AccountStore};
 
+/// The "database" for the FakeAccountStore. This is a pair of maps
+/// each of which stores a key related to an Arc<Account>. The first
+/// uses the account ID as the key, and the second uses the account
+/// email as the key, so that we can load by email.
+struct Database {
+    id_to_account: HashMap<String, Arc<Account>>,
+    email_to_account: HashMap<String, Arc<Account>>,
+}
+
+impl Database {
+    fn put(&mut self, account: &Account) {
+        let arc = Arc::new(account.clone());
+        self.id_to_account.insert(account.id.clone(), arc.clone());
+        self.email_to_account
+            .insert(account.email.clone(), arc.clone());
+    }
+
+    fn by_email(&self, email: &str) -> Option<Account> {
+        match self.email_to_account.get(email) {
+            None => None,
+            Some(arc) => Some((**arc).clone()),
+        }
+    }
+
+    fn contains_email(&self, email: &str) -> bool {
+        self.email_to_account.contains_key(email)
+    }
+}
+
+/// A fake implementation of [AccountStore] that can be used in unit tests.
 pub struct FakeAccountStore {
-    accounts: DashMap<String, Arc<Account>>,
-    email_to_id: DashMap<String, Arc<Account>>,
+    /// The [Database] wrapped in a [Mutex]. Since this is only used
+    /// for unit tests, a Mutex is sufficient and easier to reason about
+    /// than a RwLock.
+    db: Mutex<Database>,
 }
 
 impl FakeAccountStore {
     pub fn new() -> FakeAccountStore {
         FakeAccountStore {
-            accounts: DashMap::new(),
-            email_to_id: DashMap::new(),
+            db: Mutex::new(Database {
+                id_to_account: HashMap::new(),
+                email_to_account: HashMap::new(),
+            }),
         }
     }
 }
@@ -24,27 +60,21 @@ impl FakeAccountStore {
 #[async_trait]
 impl AccountStore for FakeAccountStore {
     async fn insert(&self, account: &Account) -> Result<(), AccountStoreError> {
-        if self.email_to_id.contains_key(&account.email) {
+        let mut db = self.db.lock().unwrap();
+
+        if db.contains_email(&account.email) {
             Err(AccountStoreError::EmailAlreadyExists(account.email.clone()))
         } else {
-            let arc = Arc::new(account.clone());
-            self.accounts.insert(account.id.clone(), arc.clone());
-            self.email_to_id.insert(account.email.clone(), arc.clone());
+            db.put(account);
             Ok(())
         }
     }
 
     async fn load_by_email(&self, email: &str) -> Result<Option<Account>, AccountStoreError> {
-        match self.email_to_id.get(email) {
-            None => Ok(None),
-            Some(entry) => Ok(Some((**entry.value()).clone())),
-        }
+        Ok(self.db.lock().unwrap().by_email(email))
     }
 
     async fn update(&self, account: &Account) -> Result<(), AccountStoreError> {
-        let arc = Arc::new(account.clone());
-        self.accounts.insert(account.id.clone(), arc.clone());
-        self.email_to_id.insert(account.email.clone(), arc.clone());
-        Ok(())
+        Ok(self.db.lock().unwrap().put(account))
     }
 }
