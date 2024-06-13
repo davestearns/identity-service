@@ -90,12 +90,13 @@ async fn post_tokens(
 
 async fn put_credentials(
     State(app_state): State<Arc<AppState>>,
-    Path(_): Path<String>,
+    Path(id): Path<String>,
     Json(update_credentials): Json<UpdateCredentialsRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
     let account = app_state
         .account_service
         .update_credentials(
+            &id,
             &update_credentials.old.into(),
             &update_credentials.new.into(),
         )
@@ -300,11 +301,12 @@ mod tests {
     async fn update_credentials() {
         let new_account_request = new_account_request();
         let server = test_server();
-        server
+        let new_account_response = server
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
-            .await
-            .assert_status_ok();
+            .await;
+        new_account_response.assert_status_ok();
+        let account: AccountResponse = new_account_response.json();
 
         let new_password = format!("{}-updated", &new_account_request.password);
         let update_credentials_request = UpdateCredentialsRequest {
@@ -319,7 +321,7 @@ mod tests {
         };
 
         let update_response = server
-            .put(CREDENTIALS_RESOURCE)
+            .put(&CREDENTIALS_RESOURCE.replace(":id", &account.id))
             .json(&update_credentials_request)
             .await;
 

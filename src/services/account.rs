@@ -89,10 +89,14 @@ impl AccountService {
 
     pub async fn update_credentials(
         &self,
+        id: &str,
         current_credentials: &AccountCredentials,
         new_credentials: &NewAccountCredentials,
     ) -> Result<Account, AccountsServiceError> {
         let account = self.authenticate(current_credentials).await?;
+        if id != account.id {
+            return Err(AccountsServiceError::InvalidCredentials);
+        }
         let salt = SaltString::generate(&mut OsRng);
         let new_password_hash =
             Argon2::default().hash_password(new_credentials.password.as_bytes(), &salt)?;
