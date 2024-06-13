@@ -4,7 +4,7 @@ mod services;
 
 use dotenvy::dotenv;
 use error::StartupError;
-use services::account::{store::postgres::PostgresAccountStore, AccountService};
+use services::account::{stores::postgres::PostgresAccountStore, AccountService};
 use std::{env, error::Error, str::FromStr};
 
 const DEFAULT_POSTGRES_MAX_CONNS: u32 = 5;

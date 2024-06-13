@@ -7,12 +7,12 @@ use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
 
-use store::AccountStore;
+use stores::AccountStore;
 
 pub mod error;
 pub mod id;
 pub mod models;
-pub mod store;
+pub mod stores;
 
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
@@ -92,18 +92,22 @@ impl AccountService {
         current_credentials: &AccountCredentials,
         new_credentials: &NewAccountCredentials,
     ) -> Result<Account, AccountsServiceError> {
-        let mut account = self.authenticate(current_credentials).await?;
+        let account = self.authenticate(current_credentials).await?;
         let salt = SaltString::generate(&mut OsRng);
         let new_password_hash =
             Argon2::default().hash_password(new_credentials.password.as_bytes(), &salt)?;
 
-        account.password_hash = new_password_hash.to_string();
-        if let Some(new_email) = &new_credentials.email {
-            account.email = new_email.clone();
-        }
+        let updated_account = Account {
+            password_hash: new_password_hash.to_string(),
+            email: new_credentials
+                .email
+                .clone()
+                .unwrap_or(account.email.clone()),
+            ..account
+        };
 
-        self.store.update(&account).await?;
-        Ok(account)
+        self.store.update(&updated_account).await?;
+        Ok(updated_account)
     }
 
     fn validate_password(
@@ -117,7 +121,7 @@ impl AccountService {
 
 #[cfg(test)]
 mod tests {
-    use store::fake::FakeAccountStore;
+    use stores::fake::FakeAccountStore;
 
     use super::*;
 

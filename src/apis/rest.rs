@@ -109,7 +109,7 @@ mod tests {
 
     use crate::{
         apis::models::{ApiErrorResponse, NewCredentialsRequest},
-        services::account::{store::fake::FakeAccountStore, AccountService},
+        services::account::{stores::fake::FakeAccountStore, AccountService},
     };
 
     use super::*;
