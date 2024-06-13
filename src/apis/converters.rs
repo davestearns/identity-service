@@ -4,8 +4,6 @@
 //! Keeping the model types separate allows the API to evolve independently from
 //! the services.
 
-use secrecy::ExposeSecret;
-
 use crate::services::account::models::{
     Account, AccountCredentials, NewAccount, NewAccountCredentials,
 };
@@ -19,7 +17,7 @@ impl From<NewAccountRequest> for NewAccount {
     fn from(value: NewAccountRequest) -> Self {
         NewAccount {
             email: value.email,
-            password: value.password.expose_secret().to_owned(),
+            password: value.password,
             display_name: value.display_name,
         }
     }
@@ -42,7 +40,7 @@ impl From<AuthenticateRequest> for AccountCredentials {
     fn from(value: AuthenticateRequest) -> Self {
         AccountCredentials {
             email: value.email,
-            password: value.password.expose_secret().to_owned(),
+            password: value.password,
         }
     }
 }
@@ -52,7 +50,7 @@ impl From<AuthenticateRequest> for AccountCredentials {
 impl From<NewCredentialsRequest> for NewAccountCredentials {
     fn from(value: NewCredentialsRequest) -> Self {
         NewAccountCredentials {
-            password: value.password.expose_secret().to_owned(),
+            password: value.password,
             email: value.email,
         }
     }
