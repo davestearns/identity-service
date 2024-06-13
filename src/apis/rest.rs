@@ -12,7 +12,7 @@ use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 
 use crate::{
-    api::models::{AccountResponse, NewAccountRequest},
+    apis::models::{AccountResponse, NewAccountRequest},
     services::account::AccountService,
 };
 
@@ -108,7 +108,7 @@ mod tests {
     use axum_test::TestServer;
 
     use crate::{
-        api::models::{ApiErrorResponse, NewCredentialsRequest},
+        apis::models::{ApiErrorResponse, NewCredentialsRequest},
         services::account::{store::fake::FakeAccountStore, AccountService},
     };
 

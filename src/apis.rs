@@ -2,7 +2,7 @@
 //! To start with, we will implement a simple RESTy API, but in the future, we
 //! can add other types of APIs such as websockets, gRPC, graphQL, or even SOAP 😱!
 
+pub mod converters;
+pub mod error;
 pub mod models;
 pub mod rest;
-pub mod error;
-pub mod converters;

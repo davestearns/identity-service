@@ -1,4 +1,4 @@
-mod api;
+mod apis;
 mod error;
 mod services;
 
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tracing::info!("Connecting to the database...");
     let account_store = PostgresAccountStore::new(&postgres_url, max_db_conns).await?;
     let account_service = AccountService::new(account_store);
-    let rest_router = api::rest::router(account_service);
+    let rest_router = apis::rest::router(account_service);
 
     // Listen on requested address
     let addr = env::var("REST_ADDR").map_err(|_| StartupError::RestAddrNotSet)?;
