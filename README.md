@@ -79,8 +79,8 @@ src/
     account/
       error.rs      # AccountServiceError enum and converters
       models.rs     # AccountService models
-      store.rs      # AccountStore trait
-      store/
+      stores.rs     # AccountStore trait
+      stores/
         error.rs    # AccountStoreError enum
         postgres.rs # PostgresAccountStore impl
         fake.rs     # FakeAccountStore impl
