@@ -107,61 +107,20 @@ async fn put_credentials(
 #[cfg(test)]
 mod tests {
     use axum_test::TestServer;
-    use serde::Serialize;
+    use secrecy::Secret;
 
     use crate::{
-        apis::models::ApiErrorResponse,
-        services::account::{stores::fake::FakeAccountStore, AccountService},
+        apis::models::{ApiErrorResponse, NewCredentialsRequest},
+        services::account::{models::Password, stores::fake::FakeAccountStore, AccountService},
     };
 
     use super::*;
-
-    // Local copies of the various request structs
-    // so that we can make them serializable. The
-    // original definitions are not serializable because
-    // the password field is a Secret<> which prohibits
-    // accidental leakage through serialization.
-    #[derive(Debug, Serialize)]
-    pub struct NewAccountRequest {
-        /// Account email address.
-        pub email: String,
-        /// Account password.
-        pub password: String,
-        /// Optional display name suitable for showing on screen.
-        pub display_name: Option<String>,
-    }
-    /// Represents an authentication API request body.
-    #[derive(Debug, Serialize)]
-    pub struct AuthenticateRequest {
-        /// Account email address.
-        pub email: String,
-        /// Account password.
-        pub password: String,
-    }
-
-    /// Represents a set of new credentials (used in [UpdateCredentialsRequest]).
-    #[derive(Debug, Serialize)]
-    pub struct NewCredentialsRequest {
-        /// New password.
-        pub password: String,
-        /// Optional new email address.
-        pub email: Option<String>,
-    }
-
-    /// Represents an update credentials API request body.
-    #[derive(Debug, Serialize)]
-    pub struct UpdateCredentialsRequest {
-        /// The existing credentials.
-        pub old: AuthenticateRequest,
-        /// The new credentials.
-        pub new: NewCredentialsRequest,
-    }
 
     impl Default for NewAccountRequest {
         fn default() -> Self {
             NewAccountRequest {
                 email: "test@test.com".to_string(),
-                password: "test_password".to_string(),
+                password: Secret::new(Password("test_password".to_string())),
                 display_name: Some("Tester McTester".to_string()),
             }
         }
@@ -225,7 +184,7 @@ mod tests {
     #[tokio::test]
     async fn new_account_empty_password() {
         let new_account_request = NewAccountRequest {
-            password: "".to_string(),
+            password: Secret::new(Password("".to_string())),
             ..NewAccountRequest::default()
         };
         let response = test_server()
@@ -312,7 +271,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
-            password: "invalid".to_string(),
+            password: Secret::new(Password("invalid".to_string())),
         };
         let response = server
             .post(SESSIONS_RESOURCE)
@@ -338,7 +297,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: "invalid".to_string(),
-            password: "invalid".to_string(),
+            password: Secret::new(Password("invalid".to_string())),
         };
         let response = server
             .post(SESSIONS_RESOURCE)
@@ -363,14 +322,14 @@ mod tests {
         new_account_response.assert_status_ok();
         let account: AccountResponse = new_account_response.json();
 
-        let new_password = format!("{}-updated", &new_account_request.password);
+        let new_password = "updated-password".to_string();
         let update_credentials_request = UpdateCredentialsRequest {
             old: AuthenticateRequest {
                 email: new_account_request.email.clone(),
                 password: new_account_request.password.clone(),
             },
             new: NewCredentialsRequest {
-                password: new_password.clone(),
+                password: Secret::new(Password(new_password.clone())),
                 email: None,
             },
         };
@@ -390,7 +349,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
-            password: new_password.clone(),
+            password: Secret::new(Password(new_password.clone())),
         };
 
         let authenticate_response = server

@@ -12,6 +12,8 @@ use chrono::{DateTime, Utc};
 use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 
+use crate::services::account::models::Password;
+
 /// Represents an API error JSON response
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct ApiErrorResponse {
@@ -20,18 +22,19 @@ pub struct ApiErrorResponse {
 }
 
 /// Represents a new account signup API request body.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct NewAccountRequest {
     /// Account email address.
     pub email: String,
     /// Account password.
-    pub password: Secret<String>,
+    pub password: Secret<Password>,
     /// Optional display name suitable for showing on screen.
     pub display_name: Option<String>,
 }
 
 /// Represents an account returned in an API response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct AccountResponse {
     /// Unique ID
     pub id: String,
@@ -45,25 +48,28 @@ pub struct AccountResponse {
 }
 
 /// Represents an authentication API request body.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct AuthenticateRequest {
     /// Account email address.
     pub email: String,
     /// Account password.
-    pub password: Secret<String>,
+    pub password: Secret<Password>,
 }
 
 /// Represents a set of new credentials (used in [UpdateCredentialsRequest]).
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct NewCredentialsRequest {
     /// New password.
-    pub password: Secret<String>,
+    pub password: Secret<Password>,
     /// Optional new email address.
     pub email: Option<String>,
 }
 
 /// Represents an update credentials API request body.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct UpdateCredentialsRequest {
     /// The existing credentials.
     pub old: AuthenticateRequest,

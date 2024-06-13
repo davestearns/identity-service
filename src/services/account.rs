@@ -5,7 +5,7 @@ use argon2::{
 use chrono::{DateTime, Utc};
 use error::AccountsServiceError;
 use id::ID;
-use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
+use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials, Password};
 
 use secrecy::{ExposeSecret, Secret};
 use stores::AccountStore;
@@ -49,8 +49,14 @@ impl AccountService {
     ) -> Result<Account, AccountsServiceError> {
         new_account.validate()?;
         let salt = SaltString::generate(&mut OsRng);
-        let password_hash = Argon2::default()
-            .hash_password(new_account.password.expose_secret().as_bytes(), &salt)?;
+        let password_hash = Argon2::default().hash_password(
+            new_account
+                .password
+                .expose_secret()
+                .raw_password()
+                .as_bytes(),
+            &salt,
+        )?;
         let id = ID::Acct.create();
         let account = Account {
             id,
@@ -77,8 +83,10 @@ impl AccountService {
                 // To mitigate a timing attack, verify a bogus password but
                 // ignore the results so that the API takes about the same duration
                 // as it would if the email address was found.
-                let _ =
-                    Self::validate_password(&Secret::new("bogus".to_string()), BOGUS_ARGON2_HASH);
+                let _ = Self::validate_password(
+                    &Secret::new(Password("bogus".to_string())),
+                    BOGUS_ARGON2_HASH,
+                );
                 Err(AccountsServiceError::InvalidCredentials)
             }
             Some(account) => {
@@ -101,8 +109,14 @@ impl AccountService {
             return Err(AccountsServiceError::InvalidCredentials);
         }
         let salt = SaltString::generate(&mut OsRng);
-        let new_password_hash = Argon2::default()
-            .hash_password(new_credentials.password.expose_secret().as_bytes(), &salt)?;
+        let new_password_hash = Argon2::default().hash_password(
+            new_credentials
+                .password
+                .expose_secret()
+                .raw_password()
+                .as_bytes(),
+            &salt,
+        )?;
 
         let updated_account = Account {
             password_hash: new_password_hash.to_string(),
@@ -118,16 +132,17 @@ impl AccountService {
     }
 
     fn validate_password(
-        password: &Secret<String>,
+        password: &Secret<Password>,
         password_hash: &str,
     ) -> Result<(), argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(password_hash)?;
-        Argon2::default().verify_password(password.expose_secret().as_bytes(), &parsed_hash)
+        Argon2::default().verify_password(password.expose_secret().0.as_bytes(), &parsed_hash)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use models::Password;
     use stores::fake::FakeAccountStore;
 
     use super::*;
@@ -139,7 +154,7 @@ mod tests {
         let service = AccountService::new_with_now_provider(store, move || now);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
-            password: Secret::new("test-password".to_string()),
+            password: Secret::new(Password("test-password".to_string())),
             display_name: Some("Tester McTester".to_string()),
         };
         let account = service.create_account(&new_account).await.unwrap();
@@ -148,6 +163,9 @@ mod tests {
         assert_eq!(new_account.display_name, account.display_name);
         assert_eq!(now, account.created_at);
         // ensure password was hashed and not stored as plain text!
-        assert_ne!(new_account.password.expose_secret(), &account.password_hash);
+        assert_ne!(
+            new_account.password.expose_secret().raw_password(),
+            account.password_hash.as_str()
+        );
     }
 }
