@@ -37,7 +37,7 @@ impl AccountStore for FakeAccountStore {
     async fn load_by_email(&self, email: &str) -> Result<Option<Account>, AccountStoreError> {
         match self.email_to_id.get(email) {
             None => Ok(None),
-            Some(entry) => Ok(Some(entry.value().as_ref().clone())),
+            Some(entry) => Ok(Some((**entry.value()).clone())),
         }
     }
 
