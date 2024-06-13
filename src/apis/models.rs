@@ -9,6 +9,7 @@
 //! backwards compatibility.
 
 use chrono::{DateTime, Utc};
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 
 /// Represents an API error JSON response
@@ -19,12 +20,12 @@ pub struct ApiErrorResponse {
 }
 
 /// Represents a new account signup API request body.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct NewAccountRequest {
     /// Account email address.
     pub email: String,
     /// Account password.
-    pub password: String,
+    pub password: Secret<String>,
     /// Optional diplay name suitable for showing on screen.
     pub display_name: Option<String>,
 }
@@ -44,25 +45,25 @@ pub struct AccountResponse {
 }
 
 /// Represents an authentication API request body.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AuthenticateRequest {
     /// Account email address.
     pub email: String,
     /// Account password.
-    pub password: String,
+    pub password: Secret<String>,
 }
 
 /// Represents a set of new credentials (used in [UpdateCredentialsRequest]).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct NewCredentialsRequest {
     /// New password.
-    pub password: String,
+    pub password: Secret<String>,
     /// Optional new email address.
     pub email: Option<String>,
 }
 
 /// Represents an update credentials API request body.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateCredentialsRequest {
     /// The existing credentials.
     pub old: AuthenticateRequest,

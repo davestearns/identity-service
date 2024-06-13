@@ -107,25 +107,69 @@ async fn put_credentials(
 #[cfg(test)]
 mod tests {
     use axum_test::TestServer;
+    use serde::Serialize;
 
     use crate::{
-        apis::models::{ApiErrorResponse, NewCredentialsRequest},
+        apis::models::ApiErrorResponse,
         services::account::{stores::fake::FakeAccountStore, AccountService},
     };
 
     use super::*;
 
+    // Local copies of the various request structs
+    // so that we can make them serializable. The
+    // original definitions are not serializable because
+    // the password field is a Secret<> which prohibits
+    // accidental leakage through serialization.
+    #[derive(Debug, Serialize)]
+    pub struct NewAccountRequest {
+        /// Account email address.
+        pub email: String,
+        /// Account password.
+        pub password: String,
+        /// Optional diplay name suitable for showing on screen.
+        pub display_name: Option<String>,
+    }
+    /// Represents an authentication API request body.
+    #[derive(Debug, Serialize)]
+    pub struct AuthenticateRequest {
+        /// Account email address.
+        pub email: String,
+        /// Account password.
+        pub password: String,
+    }
+
+    /// Represents a set of new credentials (used in [UpdateCredentialsRequest]).
+    #[derive(Debug, Serialize)]
+    pub struct NewCredentialsRequest {
+        /// New password.
+        pub password: String,
+        /// Optional new email address.
+        pub email: Option<String>,
+    }
+
+    /// Represents an update credentials API request body.
+    #[derive(Debug, Serialize)]
+    pub struct UpdateCredentialsRequest {
+        /// The existing credentials.
+        pub old: AuthenticateRequest,
+        /// The new credentials.
+        pub new: NewCredentialsRequest,
+    }
+
+    impl Default for NewAccountRequest {
+        fn default() -> Self {
+            NewAccountRequest {
+                email: "test@test.com".to_string(),
+                password: "test_password".to_string(),
+                display_name: Some("Tester McTester".to_string()),
+            }
+        }
+    }
+
     /// Constructs a new [TestServer] using a fresh AccountService and FakeAccountStore.
     fn test_server() -> TestServer {
         TestServer::new(router(AccountService::new(FakeAccountStore::new()))).unwrap()
-    }
-
-    fn new_account_request() -> NewAccountRequest {
-        NewAccountRequest {
-            email: "test@test.com".to_string(),
-            password: "test_password".to_string(),
-            display_name: Some("Tester McTester".to_string()),
-        }
     }
 
     #[tokio::test]
@@ -143,7 +187,7 @@ mod tests {
 
     #[tokio::test]
     async fn new_account_success() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let response = test_server()
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
@@ -201,7 +245,7 @@ mod tests {
 
     #[tokio::test]
     async fn new_account_duplicate_email() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let server = test_server();
 
         // insert the account
@@ -223,7 +267,7 @@ mod tests {
 
     #[tokio::test]
     async fn authenticate_valid_credentials() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let server = test_server();
         server
             .post(ACCOUNTS_RESOURCE)
@@ -247,7 +291,7 @@ mod tests {
 
     #[tokio::test]
     async fn authenticate_invalid_password() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let server = test_server();
         server
             .post(ACCOUNTS_RESOURCE)
@@ -273,7 +317,7 @@ mod tests {
 
     #[tokio::test]
     async fn authenticate_invalid_email() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let server = test_server();
         server
             .post(ACCOUNTS_RESOURCE)
@@ -299,7 +343,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_credentials() {
-        let new_account_request = new_account_request();
+        let new_account_request = NewAccountRequest::default();
         let server = test_server();
         let new_account_response = server
             .post(ACCOUNTS_RESOURCE)
