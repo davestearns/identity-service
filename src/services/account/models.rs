@@ -50,7 +50,7 @@ pub struct NewAccountCredentials {
 /// Validates that the contents of the Secret field are non-empty.
 fn non_empty_secret(secret: &Secret<String>) -> Result<(), ValidationError> {
     if secret.expose_secret().is_empty() {
-        Err(field_err!("EMPTY_SECRET"))
+        Err(field_err!("empty_secret"))
     } else {
         Ok(())
     }
