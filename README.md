@@ -96,7 +96,7 @@ The service is currently configured to use PostgreSQL as the runtime database. T
 
 ```bash
 # required password for the local postgres instance
-export POSTGRES_PASSWORD=my-local-postgres-password
+export POSTGRES_PASSWORD=...some password you want to use...
 docker compose up -d
 ```
 
