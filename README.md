@@ -60,7 +60,7 @@ Lower layers have no knowledge of the layers above them. For example, Stores hav
 
 ## Code Organization
 
-Under the `src` directory, the code is divided into `src/apis` and `src/servcies`. The former is where all the code for the API layer lives, and the latter contains services and their related stores.
+Under the `src` directory, the code is divided into `src/apis` and `src/services`. The former is where all the code for the API layer lives, and the latter contains services and their related stores.
 
 Rust doesn't seem to have a strong opinion about module names being singular or plural, so I went with the advice given [here](https://users.rust-lang.org/t/pluralization-in-apis-guideline/66233), which says to use singular when there is only one main thing being exported, and plural when there are (or could be in the future) several.
 
