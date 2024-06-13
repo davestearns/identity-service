@@ -12,6 +12,7 @@ I wanted to learn how to build a simple yet non-trivial API service in Rust, so 
 - [thiserror](https://docs.rs/thiserror/latest/thiserror/) for error types
 - [chrono](https://docs.rs/chrono/latest/chrono/) for timestamps
 - [secrecy][https://docs.rs/secrecy/latest/secrecy/] for ensuring secrets (like passwords) are never serialized
+- [validity][https://docs.rs/validify/latest/validify/] for declarative data validations
 - [axum-test](https://docs.rs/axum-test/latest/axum_test/) for easier API testing
 
 ## APIs

@@ -26,7 +26,7 @@ pub struct NewAccountRequest {
     pub email: String,
     /// Account password.
     pub password: Secret<String>,
-    /// Optional diplay name suitable for showing on screen.
+    /// Optional display name suitable for showing on screen.
     pub display_name: Option<String>,
 }
 
@@ -37,7 +37,7 @@ pub struct AccountResponse {
     pub id: String,
     /// Account email address.
     pub email: String,
-    /// Optional diplay name suitable for showing on screen.
+    /// Optional display name suitable for showing on screen.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     /// When this account was created.

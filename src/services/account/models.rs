@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use secrecy::{ExposeSecret, Secret};
-use validify::{field_err, ValidationError, Validify};
+use validify::{field_err, ValidationError, Validate};
 
 /// Represents a new account signup.
-#[derive(Debug, Validify)]
+#[derive(Debug, Validate)]
 pub struct NewAccount {
     /// Account email address.
     #[validate(email)]
@@ -47,6 +47,7 @@ pub struct NewAccountCredentials {
     pub email: Option<String>,
 }
 
+/// Validates that the contents of the Secret field are non-empty.
 fn non_empty_secret(secret: &Secret<String>) -> Result<(), ValidationError> {
     if secret.expose_secret().is_empty() {
         Err(field_err!("EMPTY_SECRET"))
