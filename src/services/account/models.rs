@@ -1,29 +1,18 @@
 use chrono::{DateTime, Utc};
 use secrecy::{ExposeSecret, Secret};
-
-use super::error::AccountsServiceError;
+use validify::{field_err, ValidationError, Validify};
 
 /// Represents a new account signup.
-#[derive(Debug)]
+#[derive(Debug, Validify)]
 pub struct NewAccount {
     /// Account email address.
+    #[validate(email)]
     pub email: String,
     /// Account password.
+    #[validate(custom(non_empty_secret))]
     pub password: Secret<String>,
-    /// Optional diplay name suitable for showing on screen.
+    /// Optional display name suitable for showing on screen.
     pub display_name: Option<String>,
-}
-
-impl NewAccount {
-    pub fn validate(&self) -> Result<(), AccountsServiceError> {
-        if self.email.trim().is_empty() {
-            return Err(AccountsServiceError::EmptyEmail);
-        }
-        if self.password.expose_secret().is_empty() {
-            return Err(AccountsServiceError::EmptyPassword);
-        }
-        Ok(())
-    }
 }
 
 /// Represents a full account record.
@@ -35,7 +24,7 @@ pub struct Account {
     pub email: String,
     /// Hash of the account's password.
     pub password_hash: String,
-    /// Optional diplay name suitable for showing on screen.
+    /// Optional display name suitable for showing on screen.
     pub display_name: Option<String>,
     /// When this account was created.
     pub created_at: DateTime<Utc>,
@@ -56,4 +45,12 @@ pub struct NewAccountCredentials {
     pub password: Secret<String>,
     /// Optional new email address.
     pub email: Option<String>,
+}
+
+fn non_empty_secret(secret: &Secret<String>) -> Result<(), ValidationError> {
+    if secret.expose_secret().is_empty() {
+        Err(field_err!("EMPTY_SECRET"))
+    } else {
+        Ok(())
+    }
 }

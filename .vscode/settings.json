@@ -2,9 +2,11 @@
     "cSpell.words": [
         "chrono",
         "discoverability",
+        "Hasher",
         "impls",
         "sqlx",
         "struct",
-        "thiserror"
+        "thiserror",
+        "Validify"
     ]
 }

@@ -27,8 +27,7 @@ impl IntoResponse for ApiError {
             Self::ServiceError(svc_err) => match svc_err {
                 AccountsServiceError::NotYetImplemented => StatusCode::NOT_IMPLEMENTED,
                 AccountsServiceError::EmailAlreadyExists(_)
-                | AccountsServiceError::EmptyEmail
-                | AccountsServiceError::EmptyPassword
+                | AccountsServiceError::ValidationErrors(_)
                 | AccountsServiceError::InvalidCredentials => StatusCode::BAD_REQUEST,
                 AccountsServiceError::PasswordHashingError(_)
                 | AccountsServiceError::StoreError(_) => StatusCode::INTERNAL_SERVER_ERROR,

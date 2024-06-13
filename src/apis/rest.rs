@@ -127,7 +127,7 @@ mod tests {
         pub email: String,
         /// Account password.
         pub password: String,
-        /// Optional diplay name suitable for showing on screen.
+        /// Optional display name suitable for showing on screen.
         pub display_name: Option<String>,
     }
     /// Represents an authentication API request body.
@@ -207,9 +207,8 @@ mod tests {
     #[tokio::test]
     async fn new_account_no_display_name() {
         let new_account_request = NewAccountRequest {
-            email: "test@test.com".to_string(),
-            password: "test_password".to_string(),
             display_name: None,
+            ..NewAccountRequest::default()
         };
         let response = test_server()
             .post(ACCOUNTS_RESOURCE)
@@ -226,9 +225,8 @@ mod tests {
     #[tokio::test]
     async fn new_account_empty_password() {
         let new_account_request = NewAccountRequest {
-            email: "test@test.com".to_string(),
             password: "".to_string(),
-            display_name: None,
+            ..NewAccountRequest::default()
         };
         let response = test_server()
             .post(ACCOUNTS_RESOURCE)
@@ -237,10 +235,23 @@ mod tests {
 
         response.assert_status_bad_request();
         let response_body: ApiErrorResponse = response.json();
-        assert_eq!(
-            response_body.message,
-            "The password may not be empty".to_string()
-        )
+        assert!(response_body.message.starts_with("Validation error:"))
+    }
+
+    #[tokio::test]
+    async fn new_account_invalid_email() {
+        let new_account_request = NewAccountRequest {
+            email: "invalid".to_string(),
+            ..NewAccountRequest::default()
+        };
+        let response = test_server()
+            .post(ACCOUNTS_RESOURCE)
+            .json(&new_account_request)
+            .await;
+
+        response.assert_status_bad_request();
+        let response_body: ApiErrorResponse = response.json();
+        assert!(response_body.message.starts_with("Validation error:"))
     }
 
     #[tokio::test]

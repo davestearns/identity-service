@@ -9,6 +9,7 @@ use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials};
 
 use secrecy::{ExposeSecret, Secret};
 use stores::AccountStore;
+use validify::Validate;
 
 pub mod error;
 pub mod id;

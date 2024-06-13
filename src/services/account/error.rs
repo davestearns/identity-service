@@ -11,14 +11,12 @@ pub enum AccountsServiceError {
     PasswordHashingError(argon2::password_hash::errors::Error),
     #[error("There was an error interacting with the data store: {0}")]
     StoreError(AccountStoreError),
-    #[error("The email address may not be empty")]
-    EmptyEmail,
     #[error("The email address '{0}' is already registered")]
     EmailAlreadyExists(String),
-    #[error("The password may not be empty")]
-    EmptyPassword,
     #[error("The email address or password was incorrect")]
     InvalidCredentials,
+    #[error("{0}")]
+    ValidationErrors(#[from] validify::ValidationErrors),
 }
 
 impl From<argon2::password_hash::errors::Error> for AccountsServiceError {
