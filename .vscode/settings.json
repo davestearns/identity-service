@@ -3,6 +3,8 @@
         "chrono",
         "Cloneable",
         "discoverability",
+        "dotenv",
+        "dotenvy",
         "Hasher",
         "impls",
         "serde's",

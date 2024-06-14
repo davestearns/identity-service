@@ -15,16 +15,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let _ = dotenv();
 
     // initialize tracing output
-    let env_trace_level = env::var("TRACE_LEVEL").unwrap_or(tracing::Level::DEBUG.to_string());
-    let trace_level = tracing::Level::from_str(&env_trace_level)
-        .map_err(|err| StartupError::InvalidTraceLevel(env_trace_level, err))?;
+    let trace_level = trace_level()?;
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
     // Connect to database and construct the account service with the appropriate account store
     let postgres_url = env::var("POSTGRES_URL").map_err(|_| StartupError::PostgresUrlNotSet)?;
-    let max_db_conns: u32 = env::var("POSTGRES_MAX_CONNS")
-        .unwrap_or(DEFAULT_POSTGRES_MAX_CONNS.to_string())
-        .parse()?;
+    let max_db_conns: u32 = max_db_conns()?;
     tracing::info!(
         "Creating a connection pool with a max of {} database connections",
         max_db_conns
@@ -44,4 +40,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     axum::serve(listener, rest_router).await?;
 
     Ok(())
+}
+
+fn trace_level() -> Result<tracing::Level, StartupError> {
+    match env::var("TRACE_LEVEL") {
+        Err(_) => Ok(tracing::Level::INFO),
+        Ok(s) => tracing::Level::from_str(&s).map_err(|e| StartupError::InvalidTraceLevel(s, e)),
+    }
+}
+
+fn max_db_conns() -> Result<u32, StartupError> {
+    match env::var("POSTGRES_MAX_CONNS") {
+        Err(_) => Ok(DEFAULT_POSTGRES_MAX_CONNS),
+        Ok(s) => s
+            .parse()
+            .map_err(|e| StartupError::InvalidPostgresMaxConns(s, e)),
+    }
 }
