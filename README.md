@@ -242,4 +242,4 @@ If you already have an existing Postgres instance in a cloud provider and you wa
 
 ## Feedback Welcome!
 
-Since I'm pretty new to Rust, I would love constructive feedback on this code. Feel free to open an [Issue](/davestearns/identity-service/issues) with general comments, or open a [PR](/davestearns/identity-service/pulls) with specific suggested changes.
+Since I'm pretty new to Rust, I would love constructive feedback on this code. Feel free to open an [Issue](/../../issues) with general comments, or open a [PR](/../../pulls) with specific suggested changes.
