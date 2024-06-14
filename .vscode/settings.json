@@ -5,6 +5,7 @@
         "discoverability",
         "Hasher",
         "impls",
+        "serde's",
         "sqlx",
         "struct",
         "thiserror",

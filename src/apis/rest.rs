@@ -120,7 +120,7 @@ mod tests {
         fn default() -> Self {
             NewAccountRequest {
                 email: "test@test.com".to_string(),
-                password: Secret::new(Password("test_password".to_string())),
+                password: Secret::new(Password::new("test_password")),
                 display_name: Some("Tester McTester".to_string()),
             }
         }
@@ -184,7 +184,7 @@ mod tests {
     #[tokio::test]
     async fn new_account_empty_password() {
         let new_account_request = NewAccountRequest {
-            password: Secret::new(Password("".to_string())),
+            password: Secret::new(Password::new("")),
             ..NewAccountRequest::default()
         };
         let response = test_server()
@@ -271,7 +271,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
-            password: Secret::new(Password("invalid".to_string())),
+            password: Secret::new(Password::new("invalid")),
         };
         let response = server
             .post(SESSIONS_RESOURCE)
@@ -297,7 +297,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: "invalid".to_string(),
-            password: Secret::new(Password("invalid".to_string())),
+            password: Secret::new(Password::new("invalid")),
         };
         let response = server
             .post(SESSIONS_RESOURCE)
@@ -329,7 +329,7 @@ mod tests {
                 password: new_account_request.password.clone(),
             },
             new: NewCredentialsRequest {
-                password: Secret::new(Password(new_password.clone())),
+                password: Secret::new(Password::new(&new_password)),
                 email: None,
             },
         };
@@ -349,7 +349,7 @@ mod tests {
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
-            password: Secret::new(Password(new_password.clone())),
+            password: Secret::new(Password::new(&new_password)),
         };
 
         let authenticate_response = server

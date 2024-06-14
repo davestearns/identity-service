@@ -49,14 +49,8 @@ impl AccountService {
     ) -> Result<Account, AccountsServiceError> {
         new_account.validate()?;
         let salt = SaltString::generate(&mut OsRng);
-        let password_hash = Argon2::default().hash_password(
-            new_account
-                .password
-                .expose_secret()
-                .raw_password()
-                .as_bytes(),
-            &salt,
-        )?;
+        let password_hash = Argon2::default()
+            .hash_password(new_account.password.expose_secret().raw().as_bytes(), &salt)?;
         let id = ID::Acct.create();
         let account = Account {
             id,
@@ -84,7 +78,7 @@ impl AccountService {
                 // ignore the results so that the API takes about the same duration
                 // as it would if the email address was found.
                 let _ = Self::validate_password(
-                    &Secret::new(Password("bogus".to_string())),
+                    &Secret::new(Password::new("bogus")),
                     BOGUS_ARGON2_HASH,
                 );
                 Err(AccountsServiceError::InvalidCredentials)
@@ -110,11 +104,7 @@ impl AccountService {
         }
         let salt = SaltString::generate(&mut OsRng);
         let new_password_hash = Argon2::default().hash_password(
-            new_credentials
-                .password
-                .expose_secret()
-                .raw_password()
-                .as_bytes(),
+            new_credentials.password.expose_secret().raw().as_bytes(),
             &salt,
         )?;
 
@@ -136,7 +126,7 @@ impl AccountService {
         password_hash: &str,
     ) -> Result<(), argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(password_hash)?;
-        Argon2::default().verify_password(password.expose_secret().0.as_bytes(), &parsed_hash)
+        Argon2::default().verify_password(password.expose_secret().raw().as_bytes(), &parsed_hash)
     }
 }
 
@@ -154,7 +144,7 @@ mod tests {
         let service = AccountService::new_with_now_provider(store, move || now);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
-            password: Secret::new(Password("test-password".to_string())),
+            password: Secret::new(Password::new("test-password")),
             display_name: Some("Tester McTester".to_string()),
         };
         let account = service.create_account(&new_account).await.unwrap();
@@ -164,7 +154,7 @@ mod tests {
         assert_eq!(now, account.created_at);
         // ensure password was hashed and not stored as plain text!
         assert_ne!(
-            new_account.password.expose_secret().raw_password(),
+            new_account.password.expose_secret().raw(),
             account.password_hash.as_str()
         );
     }

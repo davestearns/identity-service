@@ -92,6 +92,97 @@ Errors and models could, of course, be included in the service implementation fi
 
 I also used `From<...>` traits to convert between API models to service models. These are defined in the API layer so that the service layer remains ignorant of the API layer models (love how Rust lets you implement a trait on a type defined in a different module!). This allows the API code to simply call `.into()` then it needs to convert to/from a service model. This looks very clean, but there is a tradeoff in readability/discoverability: a new engineer looking at the code might not know why that `.into()` works, and where the associated code is defined. Jump to source doesn't really help since that jumps to the `.into()` method implementation. Perhaps the rust-analyzer plugin in VSCode will someday offer a "Jump to From<...> implementation" command?
 
+## Techniques
+
+While researching validation crates, I ran across the very clever [secrecy](https://docs.rs/secrecy/latest/secrecy/) crate. This exposes a wrapper type named [Secret](https://docs.rs/secrecy/latest/secrecy/struct.Secret.html) that implements the `Deserialize` trait but explicitly does *not* implement the `Serialize` trait, so it can't be accidentally serialized to a log or database.
+
+This is great for runtime use, but in unit tests we often want to use our API request models to build up a request and serialize it to JSON when calling our APIs. So it would be great if we could have serialization support only when running tests, but not at runtime.
+
+The `secrecy` crate does make this possible, but the documentation is thin, so I wanted to detail how I managed to do it here so that other (including my future self) can learn how to do it.
+
+### Define a Wrapper Type
+
+If you implement a marker trait called `SerializableSecret` on the value you wrap `Secret` around, then `Secret` can become serializable. The trouble is that one typically wraps `Secret` around a `String`, and you can't implement a trait on a type when both the trait and the type are define in other crates.
+
+```rust
+// WON'T COMPILE -- both SerializableSecret and String are defined in other crates!
+#[cfg(test)]
+impl SerializableSecret for String {}
+```
+
+But if you define a *new* type that *wraps around* `String`, then you can implement the trait on the new type:
+
+```rust
+// derive Clone and Deserialize always
+#[derive(Clone, Deserialize)]
+// derive Serializable only when tests are running
+#[cfg_attr(test, derive(Serialize))]
+pub struct Password(String);
+
+impl Password {
+    pub fn new(raw_password: &str) -> Password {
+        Password(raw_password.to_string())
+    }
+
+    pub fn raw(&self) -> &str {
+        &self.0
+    }
+}
+
+// Passwords are serializable only when tests are running
+#[cfg(test)]
+impl SerializableSecret for Password {}
+```
+
+This gets you most of the way there, but types used with `Secret<>` must also implement the `Zeroize` trait to zero-out their memory when they get freed. Thankfully, you can just delegate to the wrapped type for this since the crate that defines the `Zeroize` trait already implements it for `String`:
+
+```rust
+impl Zeroize for Password {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+```
+
+If you need to derive `Clone` or `Debug` on a struct that contains a `Secret<Password>` then you should also implement `CloneableSecret` and/or `DebugSecret`. The former is just a marker trait, and the latter can be delegated to `String::debug_secret()`.
+
+```rust
+impl CloneableSecret for Password {}
+
+impl DebugSecret for Password {
+    fn debug_secret(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {        
+        String::debug_secret(f)
+    }
+}
+```
+
+The last step is to conditionally derive `Serialize` on your API model that uses a `Secret<Password>`:
+
+```rust
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Serialize))]
+pub struct NewAccountRequest {
+    /// Account email address.
+    pub email: String,
+    /// Account password.
+    pub password: Secret<Password>,
+    /// Optional display name suitable for showing on screen.
+    pub display_name: Option<String>,
+}
+```
+
+Now you can build a `NewAccountRequest` in tests, and pass it to the JSON serializer when you call your API. Using the `axum-test` crate, this looks like so:
+
+```rust
+let new_account_request = NewAccountRequest { /* ... */};
+let response = test_server()
+    .post("/accounts")
+    .json(&new_account_request)
+    .await;
+```
+
+Because we used `#[cfg_attr(test, derive(Serialize))]` on the struct definition, this will work only when running tests. Any attempts to serialize the struct and the `Secret<Password>` at runtime will fail to compile.
+
 ## Local Development
 
 The service is currently configured to use PostgreSQL as the runtime database. The easiest way to run a local Postgres instance is to use [Docker](https://www.docker.com/). Install the [Docker Desktop](https://www.docker.com/products/docker-desktop/) for you operating system. Then run this at the command line to build and run a local PostgreSQL container that will automatically create the required table as the server starts:

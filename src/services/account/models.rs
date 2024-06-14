@@ -13,10 +13,14 @@ use validify::{field_err, Validate, ValidationError};
 /// that trait on `String` itself, but we can implement it on a wrapper type.
 #[derive(Clone, Deserialize)]
 #[cfg_attr(test, derive(Serialize))]
-pub struct Password(pub String);
+pub struct Password(String);
 
 impl Password {
-    pub fn raw_password(&self) -> &str {
+    pub fn new(raw_password: &str) -> Password {
+        Password(raw_password.to_string())
+    }
+
+    pub fn raw(&self) -> &str {
         &self.0
     }
 }
@@ -34,8 +38,8 @@ impl Zeroize for Password {
 impl CloneableSecret for Password {}
 
 impl DebugSecret for Password {
-    fn debug_secret(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "[REDACTED]")
+    fn debug_secret(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {        
+        String::debug_secret(f)
     }
 }
 
@@ -46,14 +50,14 @@ pub struct NewAccount {
     #[validate(email)]
     pub email: String,
     /// Account password.
-    #[validate(custom(non_empty_secret))]
+    #[validate(custom(non_empty_password))]
     pub password: Secret<Password>,
     /// Optional display name suitable for showing on screen.
     pub display_name: Option<String>,
 }
 
 /// Represents a full account record.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Account {
     /// Unique ID
     pub id: String,
@@ -68,6 +72,7 @@ pub struct Account {
 }
 
 /// Represents credentials used to authenticate an account when signing in.
+#[derive(Debug)]
 pub struct AccountCredentials {
     /// Account email address.
     pub email: String,
@@ -75,6 +80,7 @@ pub struct AccountCredentials {
     pub password: Secret<Password>,
 }
 
+#[derive(Debug)]
 pub struct NewAccountCredentials {
     /// The new password.
     pub password: Secret<Password>,
@@ -82,10 +88,10 @@ pub struct NewAccountCredentials {
     pub email: Option<String>,
 }
 
-/// Validates that the contents of the Secret field are non-empty.
-fn non_empty_secret(secret: &Secret<Password>) -> Result<(), ValidationError> {
-    if secret.expose_secret().raw_password().is_empty() {
-        Err(field_err!("empty_secret"))
+/// Validates that the contents of the Secret<Password> field are non-empty.
+fn non_empty_password(secret: &Secret<Password>) -> Result<(), ValidationError> {
+    if secret.expose_secret().raw().is_empty() {
+        Err(field_err!("empty_password"))
     } else {
         Ok(())
     }
