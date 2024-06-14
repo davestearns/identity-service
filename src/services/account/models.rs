@@ -91,7 +91,7 @@ pub struct NewAccountCredentials {
 /// Validates that the contents of the Secret<Password> field are non-empty.
 fn non_empty_password(secret: &Secret<Password>) -> Result<(), ValidationError> {
     if secret.expose_secret().raw().is_empty() {
-        Err(field_err!("empty_password"))
+        Err(field_err!("empty_password", "The password must be at least one character"))
     } else {
         Ok(())
     }
