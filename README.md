@@ -92,7 +92,7 @@ Errors and models could, of course, be included in the service implementation fi
 
 I also used `From<...>` traits to convert between API models to service models. These are defined in the API layer so that the service layer remains ignorant of the API layer models (love how Rust lets you implement a trait on a type defined in a different module!). This allows the API code to simply call `.into()` then it needs to convert to/from a service model. This looks very clean, but there is a tradeoff in readability/discoverability: a new engineer looking at the code might not know why that `.into()` works, and where the associated code is defined. Jump to source doesn't really help since that jumps to the `.into()` method implementation. Perhaps the rust-analyzer plugin in VSCode will someday offer a "Jump to From<...> implementation" command?
 
-## Techniques
+## Password and Serialization
 
 While researching validation crates, I ran across the very clever [secrecy](https://docs.rs/secrecy/latest/secrecy/) crate. This exposes a wrapper type named [Secret](https://docs.rs/secrecy/latest/secrecy/struct.Secret.html) that implements the `Deserialize` trait but explicitly does *not* implement the `Serialize` trait, so it can't be accidentally serialized to a log or database.
 
@@ -102,10 +102,11 @@ The `secrecy` crate does make this possible, but the documentation is thin, so I
 
 ### Define a Wrapper Type
 
-If you implement a marker trait called `SerializableSecret` on the value you wrap `Secret` around, then `Secret` can become serializable. The trouble is that one typically wraps `Secret` around a `String`, and you can't implement a trait on a type when both the trait and the type are define in other crates.
+If you implement a marker trait called `SerializableSecret` on the value type you wrap `Secret` around, then the `Secret<T>` can become serializable. The trouble is that one typically wraps `Secret` around a `String`, and you can't implement a trait on a type when both the trait and the type are defined in crates other than your own.
 
 ```rust
-// WON'T COMPILE -- both SerializableSecret and String are defined in other crates!
+// WON'T COMPILE
+// Both SerializableSecret and String are defined in other crates!
 #[cfg(test)]
 impl SerializableSecret for String {}
 ```
@@ -134,6 +135,8 @@ impl Password {
 impl SerializableSecret for Password {}
 ```
 
+Unfortunately you can't simply use a type alias here, as that doesn't introduce a new type, just an alias for an existing type. But a wrapper type allows you to keep the internal `String` private, and only expose an immutable reference.
+
 This gets you most of the way there, but types used with `Secret<>` must also implement the `Zeroize` trait to zero-out their memory when they get freed. Thankfully, you can just delegate to the wrapped type for this since the crate that defines the `Zeroize` trait already implements it for `String`:
 
 ```rust
@@ -144,7 +147,9 @@ impl Zeroize for Password {
 }
 ```
 
-If you need to derive `Clone` or `Debug` on a struct that contains a `Secret<Password>` then you should also implement `CloneableSecret` and/or `DebugSecret`. The former is just a marker trait, and the latter can be delegated to `String::debug_secret()`.
+Note that you *can* implement a trait on `String` *if* the trait is defined in the same crate as the implementation. The reason we couldn't implement `SerializableSecret` directly on `String`is because both the trait definition and the target type are defined in crates other than our own.
+
+If you want to derive `Clone` or `Debug` on a struct that contains a `Secret<Password>` then you should also implement `CloneableSecret` and/or `DebugSecret`. The former is just a marker trait, and the latter can be delegated to `String::debug_secret()`, which is defined in the `secrecy` crate (where the `DebugSecret` trait is also defined).
 
 ```rust
 impl CloneableSecret for Password {}
@@ -179,9 +184,11 @@ let response = test_server()
     .post("/accounts")
     .json(&new_account_request)
     .await;
+
+response.assert_status_ok();
 ```
 
-Because we used `#[cfg_attr(test, derive(Serialize))]` on the struct definition, this will work only when running tests. Any attempts to serialize the struct and the `Secret<Password>` at runtime will fail to compile.
+Because we used `#[cfg_attr(test, derive(Serialize))]` on the struct definition, this will work only when running tests. Any attempts to serialize the struct and the `Secret<Password>` at runtime will fail to compile!
 
 ## Local Development
 
