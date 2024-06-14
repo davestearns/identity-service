@@ -69,28 +69,30 @@ Rust doesn't seem to have a strong opinion about module names being singular or 
 src/
   main.rs           # main() fn, dependency injection
   error.rs          # StartupError
-  apis.rs           # main module for all APIs
+  apis.rs           # root module for all APIs
   apis/
     error.rs        # ApiError
     converters.rs   # From<...> impls for service models
     models.rs       # common API models
-    rest.rs         # REST API impl
-  services.rs       # main module for all services
+    rest.rs         # REST API
+  services.rs       # root module for all services
   services/
-    account.rs      # AccountService impl
+    account.rs      # AccountService (local auth accounts)
     account/
-      error.rs      # AccountServiceError enum and converters
+      error.rs      # AccountServiceError
       models.rs     # AccountService models
       stores.rs     # AccountStore trait
       stores/
-        error.rs    # AccountStoreError enum
-        postgres.rs # PostgresAccountStore impl
-        fake.rs     # FakeAccountStore impl
+        error.rs    # AccountStoreError
+        postgres.rs # PostgresAccountStore
+        fake.rs     # FakeAccountStore
 ```
 
-Errors and models could, of course, be included in the service implementation file, but I found that splitting them into separate files kept the clutter down. Each `models.rs` mostly contains `struct` definitions, and `error.rs` is just the error enum along with `From<...>` implementations that convert from errors returned from lower layers.
+Again, splitting errors and models into separate files might be a tad overkill for what this service currently is, but doing so helps keep the source files manageable as the amount of code increases. Following a consistent pattern also makes it easier for engineers to know where particular things are defined: an error enum for a given module is always in the `error.rs` file within that module.
 
-I also used `From<...>` traits to convert between API models to service models. These are defined in the API layer so that the service layer remains ignorant of the API layer models (love how Rust lets you implement a trait on a type defined in a different module!). This allows the API code to simply call `.into()` then it needs to convert to/from a service model. This looks very clean, but there is a tradeoff in readability/discoverability: a new engineer looking at the code might not know why that `.into()` works, and where the associated code is defined. Jump to source doesn't really help since that jumps to the `.into()` method implementation. Perhaps the rust-analyzer plugin in VSCode will someday offer a "Jump to From<...> implementation" command?
+I also used `From<T>` traits to convert between API models to service models. These are defined in the API layer so that the service layer remains ignorant of the API layer models (love how Rust lets you implement a trait on a type defined in a different module!). This allows the API code to simply call `.into()` when it needs to convert to/from a service model. 
+
+This automatic conversion magic is cool, but there is a tradeoff in readability/discoverability: a new engineer looking at the code might not know why that `.into()` works, and where the associated code is defined. Jump to source doesn't really help since that jumps to the `.into()` method implementation, not the `From<T>` trait implementation that the `.into()` method uses. Perhaps the rust-analyzer plugin in VSCode will someday offer a more specific command for this sort of thing?
 
 ## Password and Serialization
 
