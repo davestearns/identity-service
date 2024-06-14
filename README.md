@@ -94,15 +94,15 @@ I also used `From<...>` traits to convert between API models to service models. 
 
 ## Password and Serialization
 
-While researching validation crates, I ran across the very clever [secrecy](https://docs.rs/secrecy/latest/secrecy/) crate. This exposes a wrapper type named [Secret](https://docs.rs/secrecy/latest/secrecy/struct.Secret.html) that implements the `Deserialize` trait but explicitly does *not* implement the `Serialize` trait, so it can't be accidentally serialized to a log or database.
+While researching validation crates, I ran across the very clever [secrecy](https://docs.rs/secrecy/latest/secrecy/) crate. This exposes a wrapper type named [Secret](https://docs.rs/secrecy/latest/secrecy/struct.Secret.html) that implements the `Deserialize` trait but explicitly does *not* implement the `Serialize` trait, so it can't be serialized to a log or database. Very clever! This makes it easy to ensure we never accidentally write a user's password in plain text to any kind of durable storage.
 
-This is great for runtime use, but in unit tests we often want to use our API request models to build up a request and serialize it to JSON when calling our APIs. So it would be great if we could have serialization support only when running tests, but not at runtime.
+This is great for runtime use, but in unit tests we often want to use our API request models to build up a request and serialize it to JSON when testing our APIs. So it would be great if we could have serialization support only when running tests, but not at runtime.
 
-The `secrecy` crate does make this possible, but the documentation is thin, so I wanted to detail how I managed to do it here so that other (including my future self) can learn how to do it.
+The `secrecy` crate does make this possible, but the documentation is thin, so I wanted to detail how I managed to do it here so that others (including my future self who has forgotten) can learn how to do it.
 
 ### Define a Wrapper Type
 
-If you implement a marker trait called `SerializableSecret` on the value type you wrap `Secret` around, then the `Secret<T>` can become serializable. The trouble is that one typically wraps `Secret` around a `String`, and you can't implement a trait on a type when both the trait and the type are defined in crates other than your own.
+If you implement a marker trait called `SerializableSecret` on the value type `T` you wrap `Secret<T>` around, then the `Secret<T>` can become serializable. The trouble is that one typically wraps `Secret` around a `String`, and you can't implement a trait on a type when both the trait and the type are defined in crates other than your own.
 
 ```rust
 // WON'T COMPILE
@@ -118,6 +118,8 @@ But if you define a *new* type that *wraps around* `String`, then you can implem
 #[derive(Clone, Deserialize)]
 // derive Serializable only when tests are running
 #[cfg_attr(test, derive(Serialize))]
+/// Password is a simple tuple struct that wraps around a String
+/// and implements [SerializableSecret] only when tests run.
 pub struct Password(String);
 
 impl Password {
@@ -135,9 +137,9 @@ impl Password {
 impl SerializableSecret for Password {}
 ```
 
-Unfortunately you can't simply use a type alias here, as that doesn't introduce a new type, just an alias for an existing type. But a wrapper type allows you to keep the internal `String` private, and only expose an immutable reference.
+Unfortunately you can't simply use a type alias here, as that doesn't introduce a new type, just an alias for an existing type. But a wrapper type is actually handy: it allows you to keep the internal `String` value private, and only expose an immutable reference to the password hashing algorithm.
 
-This gets you most of the way there, but types used with `Secret<>` must also implement the `Zeroize` trait to zero-out their memory when they get freed. Thankfully, you can just delegate to the wrapped type for this since the crate that defines the `Zeroize` trait already implements it for `String`:
+This gets you most of the way there, but types used with `Secret<T>` must also implement the `Zeroize` trait to zero-out their memory when they get freed. Thankfully, you can just delegate to the wrapped type for this since the crate that defines the `Zeroize` trait already implements it for `String`:
 
 ```rust
 impl Zeroize for Password {
@@ -147,7 +149,7 @@ impl Zeroize for Password {
 }
 ```
 
-Note that you *can* implement a trait on `String` *if* the trait is defined in the same crate as the implementation. The reason we couldn't implement `SerializableSecret` directly on `String`is because both the trait definition and the target type are defined in crates other than our own.
+Note that you *can* implement a trait on `String` *if* the trait is defined in the same crate as the implementation. The reason we couldn't implement `SerializableSecret` directly on `String`is because both the trait definition and the target type are defined in crates other than our own. This makes sense: if Rust allowed you to do that, you could have a trait defined in crate A, a type defined in crate B, and *different* implementations of the trait on the type defined in crates C and D. If all four crates were used in the same project, the compiler couldn't resolve which implementation to use, and that combination of crates would become unusable.
 
 If you want to derive `Clone` or `Debug` on a struct that contains a `Secret<Password>` then you should also implement `CloneableSecret` and/or `DebugSecret`. The former is just a marker trait, and the latter can be delegated to `String::debug_secret()`, which is defined in the `secrecy` crate (where the `DebugSecret` trait is also defined).
 
