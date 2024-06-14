@@ -163,6 +163,8 @@ impl DebugSecret for Password {
 }
 ```
 
+### Conditionally Derive Serialize on Request Model
+
 The last step is to conditionally derive `Serialize` on your API model that uses a `Secret<Password>`:
 
 ```rust
@@ -237,3 +239,7 @@ docker compose down
 The data being stored by the Postgres container lives inside the container so this will also destroy all the data. If you want to preserve data between runs, adjust the [compose.yaml](./compose.yaml) file to include a [volume mount](https://docs.docker.com/compose/compose-file/05-services/#volumes) that maps `/var/lib/postgresql/data` in the container to a file on your host's drive.
 
 If you already have an existing Postgres instance in a cloud provider and you want to use it instead, run the [schema creation script](./docker/postgres/schema.sql) in one of the databases, and set the `POSTGRES_URL` environment variable to point toward your instance.
+
+## Feedback Welcome!
+
+Since I'm pretty new to Rust, I would love constructive feedback on this code. Feel free to open an [Issue](/davestearns/identity-service/issues) with general comments, or open a [PR](/davestearns/identity-service/pulls) with specific suggested changes.
