@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Json, Path, State},
+    http::StatusCode,
     routing::{get, post, put},
     Router,
 };
@@ -60,7 +61,7 @@ async fn get_root() -> &'static str {
 async fn post_accounts(
     State(app_state): State<Arc<AppState>>,
     Json(new_account_request): Json<NewAccountRequest>,
-) -> Result<Json<AccountResponse>, ApiError> {
+) -> Result<(StatusCode, Json<AccountResponse>), ApiError> {
     // If the account service returns an Err result,
     // the ? syntax after await will cause this method
     // to return early, and convert the AccountServiceError
@@ -74,7 +75,7 @@ async fn post_accounts(
     // This `account.into()` converts the service-level Account model
     // to an API-level AccountResponse model. This works because of the
     // From<...> trait implementations in converters.rs.
-    Ok(Json(account.into()))
+    Ok((StatusCode::CREATED, Json(account.into())))
 }
 
 async fn post_tokens(
@@ -152,7 +153,7 @@ mod tests {
             .json(&new_account_request)
             .await;
 
-        response.assert_status_ok();
+        response.assert_status(StatusCode::CREATED);
         let response_account: AccountResponse = response.json();
         assert!(!response_account.id.is_empty());
         assert!(response_account.id.starts_with("acct_"));
@@ -174,7 +175,7 @@ mod tests {
             .json(&new_account_request)
             .await;
 
-        response.assert_status_ok();
+        response.assert_status(StatusCode::CREATED);
         let response_account: AccountResponse = response.json();
         assert!(!response_account.id.is_empty());
         assert_eq!(new_account_request.email, response_account.email);
@@ -223,7 +224,7 @@ mod tests {
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
-            .assert_status_ok();
+            .assert_status(StatusCode::CREATED);
         // try to insert it again -- should get a duplicate email bad request
         let response = server.post("/accounts").json(&new_account_request).await;
 
@@ -243,7 +244,7 @@ mod tests {
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
-            .assert_status_ok();
+            .assert_status(StatusCode::CREATED);
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
@@ -267,7 +268,7 @@ mod tests {
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
-            .assert_status_ok();
+            .assert_status(StatusCode::CREATED);
 
         let authenticate_request = AuthenticateRequest {
             email: new_account_request.email.clone(),
@@ -293,7 +294,7 @@ mod tests {
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await
-            .assert_status_ok();
+            .assert_status(StatusCode::CREATED);
 
         let authenticate_request = AuthenticateRequest {
             email: "invalid".to_string(),
@@ -319,7 +320,7 @@ mod tests {
             .post(ACCOUNTS_RESOURCE)
             .json(&new_account_request)
             .await;
-        new_account_response.assert_status_ok();
+        new_account_response.assert_status(StatusCode::CREATED);
         let account: AccountResponse = new_account_response.json();
 
         let new_password = "updated-password".to_string();

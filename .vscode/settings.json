@@ -7,6 +7,7 @@
         "dotenvy",
         "Hasher",
         "impls",
+        "serde",
         "serde's",
         "sqlx",
         "struct",
