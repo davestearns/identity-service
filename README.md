@@ -13,7 +13,6 @@ I wanted to learn how to build a simple yet non-trivial API service in Rust, so 
 - [chrono](https://docs.rs/chrono/latest/chrono/) for timestamps
 - [secrecy](https://docs.rs/secrecy/latest/secrecy/) for ensuring secrets (like passwords) are never serialized
 - [validity](https://docs.rs/validify/latest/validify/) for declarative data validations
-- [axum-prometheus](https://docs.rs/prometheus/latest/prometheus/) for Prometheus metrics
 - [axum-test](https://docs.rs/axum-test/latest/axum_test/) for easier API testing
 
 ## APIs
@@ -25,7 +24,6 @@ The service implements the following APIs:
 | POST | /accounts | Creates a new local account | [NewAccountRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 | PUT | /accounts/:id/credentials | Updates account credentials | [UpdateCredentialsRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
 | POST | /sessions | Authenticates provided credentials | [AuthenticationRequest](./src/api/models.rs) | [AccountResponse](./src/api/models.rs) or BAD_REQUEST error
-| GET | /metrics | Returns metrics that can be consumed by a Prometheus scraper | N/A | Prometheus metrics
 
 A caller such as an API gateway could use these APIs to support basic sign-up/in and updating credentials. During sign-in, the API gateway would use this service to authenticate the credentials, create a new digitally-signed session token, put the account details into a cache like [redis](https://redis.io/) using the session token as the key, and drop the session token as a response cookie. When the API gateway receives a subsequent request containing the cookie, it would validate the token's signature to ensure it wasn't tampered with or forged, and fetch the user profile from the cache if it all checks out.
 
@@ -35,6 +33,7 @@ Although this service is functional, it was built for educational purposes only,
 - Passkeys
 - Audit log with events about updates to accounts
 - Authorizing through other identity providers (e.g., sign in with Google/GitHub/Apple/etc)
+- Runtime metrics via Prometheus or statsd
 
 ## Architecture
 
