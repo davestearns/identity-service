@@ -19,7 +19,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trace_level = trace_level()?;
     tracing_subscriber::fmt().with_max_level(trace_level).init();
 
-    // install global Prometheus metrics reporter
+    // install global Prometheus metrics reporter and the
+    // http scrape endpoint (defaults to running on port 9000)
     PrometheusBuilder::new().install()?;
 
     // Connect to database and construct the account service with the appropriate account store
