@@ -13,6 +13,7 @@ I wanted to learn how to build a simple yet non-trivial API service in Rust, so 
 - [chrono](https://docs.rs/chrono/latest/chrono/) for timestamps
 - [secrecy](https://docs.rs/secrecy/latest/secrecy/) for ensuring secrets (like passwords) are never serialized
 - [validity](https://docs.rs/validify/latest/validify/) for declarative data validations
+- [axum-prometheus](https://docs.rs/axum-prometheus/latest/axum_prometheus/) for Prometheus metrics
 - [axum-test](https://docs.rs/axum-test/latest/axum_test/) for easier API testing
 
 ## APIs
@@ -33,7 +34,6 @@ Although this service is functional, it was built for educational purposes only,
 - Passkeys
 - Audit log with events about updates to accounts
 - Authorizing through other identity providers (e.g., sign in with Google/GitHub/Apple/etc)
-- Runtime metrics via Prometheus or statsd
 
 ## Architecture
 

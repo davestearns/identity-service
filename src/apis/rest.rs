@@ -8,8 +8,9 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
+use axum_prometheus::PrometheusMetricLayer;
 use tower::ServiceBuilder;
-use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 
 use crate::{
@@ -42,6 +43,7 @@ pub fn router(account_service: AccountService) -> Router {
     // By default, TraceLayer traces at DEBUG level, which is probably too low
     // for runtime. This configures it to trace at INFO level instead.
     let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
         .on_request(DefaultOnRequest::new().level(Level::INFO))
         .on_response(DefaultOnResponse::new().level(Level::INFO));
 
@@ -51,7 +53,11 @@ pub fn router(account_service: AccountService) -> Router {
         .route(CREDENTIALS_RESOURCE, put(put_credentials))
         .route(SESSIONS_RESOURCE, post(post_tokens))
         .with_state(shared_state)
-        .layer(ServiceBuilder::new().layer(trace_layer))
+        .layer(
+            ServiceBuilder::new()
+                .layer(trace_layer)
+                .layer(PrometheusMetricLayer::new()),
+        )
 }
 
 async fn get_root() -> &'static str {

@@ -2,6 +2,7 @@ mod apis;
 mod error;
 mod services;
 
+use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 use dotenvy::dotenv;
 use error::StartupError;
 use services::account::{stores::postgres::PostgresAccountStore, AccountService};
@@ -17,6 +18,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // initialize tracing output
     let trace_level = trace_level()?;
     tracing_subscriber::fmt().with_max_level(trace_level).init();
+
+    // install global Prometheus metrics reporter
+    PrometheusBuilder::new().install()?;
 
     // Connect to database and construct the account service with the appropriate account store
     let postgres_url = env::var("POSTGRES_URL").map_err(|_| StartupError::PostgresUrlNotSet)?;
