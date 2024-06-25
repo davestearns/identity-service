@@ -9,7 +9,7 @@ use axum::{
     Router,
 };
 use tower::ServiceBuilder;
-use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 
 use crate::{
@@ -26,6 +26,7 @@ const ROOT_RESPONSE: &str = "Welcome to the identity service!";
 const ACCOUNTS_RESOURCE: &str = "/accounts";
 const CREDENTIALS_RESOURCE: &str = "/accounts/:id/credentials";
 const SESSIONS_RESOURCE: &str = "/sessions";
+const METRICS_RESOURCE: &str = "/metrics";
 
 /// Application state that can be accessed by any route handler.
 /// Note that this doesn't need `#[derive(Clone)]` because we will
@@ -42,15 +43,24 @@ pub fn router(account_service: AccountService) -> Router {
     // By default, TraceLayer traces at DEBUG level, which is probably too low
     // for runtime. This configures it to trace at INFO level instead.
     let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
         .on_request(DefaultOnRequest::new().level(Level::INFO))
         .on_response(DefaultOnResponse::new().level(Level::INFO));
+
+    // Add a Prometheus metrics layer
+    let (prometheus_layer, metric_handle) = axum_prometheus::PrometheusMetricLayer::pair();
 
     Router::new()
         .route("/", get(get_root))
         .route(ACCOUNTS_RESOURCE, post(post_accounts))
         .route(CREDENTIALS_RESOURCE, put(put_credentials))
         .route(SESSIONS_RESOURCE, post(post_tokens))
+        .route(
+            METRICS_RESOURCE,
+            get(|| async move { metric_handle.render() }),
+        )
         .with_state(shared_state)
+        .layer(prometheus_layer)
         .layer(ServiceBuilder::new().layer(trace_layer))
 }
 

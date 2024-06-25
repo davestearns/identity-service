@@ -20,6 +20,7 @@ argon2 = { version = "0.5.3", features = ["password-hash"] }
 uuid = { version = "1.8.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
 secrecy = { version = "0.8.0", features = ["serde"] }
 validify = "1.4.0"
+axum-prometheus = "0.6.1"
 
 [dev-dependencies]
 http-body-util = "0.1.1"
