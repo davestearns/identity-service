@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials, Password};
@@ -19,26 +19,15 @@ pub mod stores;
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
 
-type NowProvider = dyn Fn() -> DateTime<Utc> + Send + Sync;
-
 pub struct AccountService<S: AccountStore> {
     store: S,
-    now_provider: Box<NowProvider>,
 }
 
 impl<S: AccountStore> AccountService<S> {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
     pub fn new(account_store: S) -> Self {
-        Self::new_with_now_provider(account_store, Utc::now)
-    }
-
-    pub fn new_with_now_provider(
-        account_store: S,
-        now_provider: impl Fn() -> DateTime<Utc> + Send + Sync + 'static,
-    ) -> Self {
-        AccountService {
+        Self {
             store: account_store,
-            now_provider: Box::new(now_provider),
         }
     }
 
@@ -60,7 +49,7 @@ impl<S: AccountStore> AccountService<S> {
                 .display_name
                 .clone()
                 .map(|v| v.trim().to_string()),
-            created_at: (self.now_provider)(),
+            created_at: Utc::now(),
         };
         self.store.insert(&account).await?;
         Ok(account)
@@ -140,8 +129,8 @@ mod tests {
     #[tokio::test]
     async fn create_account() {
         let store = FakeAccountStore::new();
-        let now = Utc::now();
-        let service = AccountService::new_with_now_provider(store, move || now);
+        let start = Utc::now();
+        let service = AccountService::new(store);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
             password: Secret::new(Password::new("test-password")),
@@ -151,7 +140,7 @@ mod tests {
 
         assert_eq!(new_account.email, account.email);
         assert_eq!(new_account.display_name, account.display_name);
-        assert_eq!(now, account.created_at);
+        assert!(account.created_at >= start && account.created_at <= Utc::now());
         // ensure password was hashed and not stored as plain text!
         assert_ne!(
             new_account.password.expose_secret().raw(),
