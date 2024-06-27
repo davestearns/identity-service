@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials, Password};
@@ -11,6 +11,8 @@ use secrecy::{ExposeSecret, Secret};
 use stores::AccountStore;
 use validify::Validate;
 
+use super::Clock;
+
 pub mod error;
 pub mod id;
 pub mod models;
@@ -18,9 +20,6 @@ pub mod stores;
 
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
-
-pub trait Clock: Fn() -> DateTime<Utc> + Sync + Send + 'static {}
-impl<T: Fn() -> DateTime<Utc> + Sync + Send + 'static> Clock for T {}
 
 pub struct AccountService<S: AccountStore, C: Clock> {
     store: S,
