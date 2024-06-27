@@ -21,23 +21,23 @@ const BOGUS_ARGON2_HASH: &str =
 
 type NowProvider = dyn Fn() -> DateTime<Utc> + Send + Sync;
 
-pub struct AccountService {
-    store: Box<dyn AccountStore>,
+pub struct AccountService<S: AccountStore> {
+    store: S,
     now_provider: Box<NowProvider>,
 }
 
-impl AccountService {
+impl<S: AccountStore> AccountService<S> {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
-    pub fn new(account_store: impl AccountStore + 'static) -> AccountService {
+    pub fn new(account_store: S) -> Self {
         Self::new_with_now_provider(account_store, Utc::now)
     }
 
     pub fn new_with_now_provider(
-        account_store: impl AccountStore + 'static,
+        account_store: S,
         now_provider: impl Fn() -> DateTime<Utc> + Send + Sync + 'static,
-    ) -> AccountService {
+    ) -> Self {
         AccountService {
-            store: Box::new(account_store),
+            store: account_store,
             now_provider: Box::new(now_provider),
         }
     }

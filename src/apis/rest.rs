@@ -15,7 +15,7 @@ use tracing::Level;
 
 use crate::{
     apis::models::{AccountResponse, NewAccountRequest},
-    services::account::AccountService,
+    services::account::{stores::AccountStore, AccountService},
 };
 
 use super::{
@@ -31,12 +31,12 @@ const SESSIONS_RESOURCE: &str = "/sessions";
 /// Application state that can be accessed by any route handler.
 /// Note that this doesn't need `#[derive(Clone)]` because we will
 /// put this into an [Arc] and [Arc] already supports [Clone].
-struct AppState {
-    account_service: AccountService,
+struct AppState<AS: AccountStore + 'static> {
+    account_service: AccountService<AS>,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router(account_service: AccountService) -> Router {
+pub fn router<AS: AccountStore + 'static>(account_service: AccountService<AS>) -> Router {
     // wrap the AppState in an [Arc] since it will be shared between threads
     let shared_state = Arc::new(AppState { account_service });
 
@@ -64,8 +64,8 @@ async fn get_root() -> &'static str {
     ROOT_RESPONSE
 }
 
-async fn post_accounts(
-    State(app_state): State<Arc<AppState>>,
+async fn post_accounts<AS:AccountStore>(
+    State(app_state): State<Arc<AppState<AS>>>,
     Json(new_account_request): Json<NewAccountRequest>,
 ) -> Result<(StatusCode, Json<AccountResponse>), ApiError> {
     // If the account service returns an Err result,
@@ -84,8 +84,8 @@ async fn post_accounts(
     Ok((StatusCode::CREATED, Json(account.into())))
 }
 
-async fn post_tokens(
-    State(app_state): State<Arc<AppState>>,
+async fn post_tokens<AS:AccountStore>(
+    State(app_state): State<Arc<AppState<AS>>>,
     Json(account_credentials): Json<AuthenticateRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
     let account = app_state
@@ -95,8 +95,8 @@ async fn post_tokens(
     Ok(Json(account.into()))
 }
 
-async fn put_credentials(
-    State(app_state): State<Arc<AppState>>,
+async fn put_credentials<AS:AccountStore>(
+    State(app_state): State<Arc<AppState<AS>>>,
     Path(id): Path<String>,
     Json(update_credentials): Json<UpdateCredentialsRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
