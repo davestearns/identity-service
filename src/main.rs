@@ -3,7 +3,6 @@ mod error;
 mod services;
 
 use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
-use chrono::Utc;
 use dotenvy::dotenv;
 use error::StartupError;
 use services::account::{stores::postgres::PostgresAccountStore, AccountService};
@@ -33,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     tracing::info!("Connecting to the database...");
     let account_store = PostgresAccountStore::new(&postgres_url, max_db_conns).await?;
-    let account_service = AccountService::new(account_store, Utc::now);
+    let account_service = AccountService::new(account_store);
     let rest_router = apis::rest::router(account_service);
 
     // Listen on requested address

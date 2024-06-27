@@ -36,9 +36,7 @@ struct AppState<AS: AccountStore, C: Clock> {
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router<AS: AccountStore, C: Clock>(
-    account_service: AccountService<AS, C>,
-) -> Router {
+pub fn router<AS: AccountStore, C: Clock>(account_service: AccountService<AS, C>) -> Router {
     // wrap the AppState in an [Arc] since it will be shared between threads
     let shared_state = Arc::new(AppState { account_service });
 
@@ -138,7 +136,7 @@ mod tests {
 
     /// Constructs a new [TestServer] using a fresh AccountService and FakeAccountStore.
     fn test_server() -> TestServer {
-        TestServer::new(router(AccountService::new(
+        TestServer::new(router(AccountService::new_with_clock(
             FakeAccountStore::new(),
             Utc::now,
         )))

@@ -29,7 +29,7 @@ pub struct AccountService<S: AccountStore, C: Clock> {
 
 impl<S: AccountStore, C: Clock> AccountService<S, C> {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
-    pub fn new(account_store: S, clock: C) -> Self {
+    pub fn new_with_clock(account_store: S, clock: C) -> Self {
         Self {
             store: account_store,
             clock,
@@ -124,6 +124,12 @@ impl<S: AccountStore, C: Clock> AccountService<S, C> {
     }
 }
 
+impl<S: AccountStore> AccountService<S, fn() -> chrono::DateTime<Utc>> {
+    pub fn new(account_store: S) -> Self {
+        Self::new_with_clock(account_store, Utc::now)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use models::Password;
@@ -135,7 +141,7 @@ mod tests {
     async fn create_account() {
         let store = FakeAccountStore::new();
         let now = Utc::now();
-        let service = AccountService::new(store, move || now);
+        let service = AccountService::new_with_clock(store, move || now);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
             password: Secret::new(Password::new("test-password")),
