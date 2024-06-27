@@ -65,3 +65,22 @@ impl<TZ: TimeZone + Send + Sync + 'static> Clock<TZ> for TestClock<TZ> where <TZ
         self.now.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+
+    use super::*;
+
+    #[test]
+    fn test_clock() {
+        let start = Utc::now();
+        let mut clock = TestClock::new(start);
+        
+        assert_eq!(start, clock.now());
+        clock.advance(TimeDelta::days(1));
+        assert_eq!(1, (clock.now() - start).num_days());
+        clock.rewind(TimeDelta::days(1));
+        assert_eq!(start, clock.now());
+    }
+}
