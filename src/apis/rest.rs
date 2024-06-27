@@ -15,7 +15,7 @@ use tracing::Level;
 
 use crate::{
     apis::models::{AccountResponse, NewAccountRequest},
-    services::account::{stores::AccountStore, AccountService},
+    services::account::{stores::AccountStore, AccountService, Clock},
 };
 
 use super::{
@@ -31,12 +31,14 @@ const SESSIONS_RESOURCE: &str = "/sessions";
 /// Application state that can be accessed by any route handler.
 /// Note that this doesn't need `#[derive(Clone)]` because we will
 /// put this into an [Arc] and [Arc] already supports [Clone].
-struct AppState<AS: AccountStore + 'static> {
-    account_service: AccountService<AS>,
+struct AppState<AS: AccountStore, C: Clock> {
+    account_service: AccountService<AS, C>,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router<AS: AccountStore + 'static>(account_service: AccountService<AS>) -> Router {
+pub fn router<AS: AccountStore, C: Clock>(
+    account_service: AccountService<AS, C>,
+) -> Router {
     // wrap the AppState in an [Arc] since it will be shared between threads
     let shared_state = Arc::new(AppState { account_service });
 
@@ -64,8 +66,8 @@ async fn get_root() -> &'static str {
     ROOT_RESPONSE
 }
 
-async fn post_accounts<AS:AccountStore>(
-    State(app_state): State<Arc<AppState<AS>>>,
+async fn post_accounts<AS: AccountStore, C: Clock>(
+    State(app_state): State<Arc<AppState<AS, C>>>,
     Json(new_account_request): Json<NewAccountRequest>,
 ) -> Result<(StatusCode, Json<AccountResponse>), ApiError> {
     // If the account service returns an Err result,
@@ -84,8 +86,8 @@ async fn post_accounts<AS:AccountStore>(
     Ok((StatusCode::CREATED, Json(account.into())))
 }
 
-async fn post_tokens<AS:AccountStore>(
-    State(app_state): State<Arc<AppState<AS>>>,
+async fn post_tokens<AS: AccountStore, C: Clock>(
+    State(app_state): State<Arc<AppState<AS, C>>>,
     Json(account_credentials): Json<AuthenticateRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
     let account = app_state
@@ -95,8 +97,8 @@ async fn post_tokens<AS:AccountStore>(
     Ok(Json(account.into()))
 }
 
-async fn put_credentials<AS:AccountStore>(
-    State(app_state): State<Arc<AppState<AS>>>,
+async fn put_credentials<AS: AccountStore, C: Clock>(
+    State(app_state): State<Arc<AppState<AS, C>>>,
     Path(id): Path<String>,
     Json(update_credentials): Json<UpdateCredentialsRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
@@ -114,6 +116,7 @@ async fn put_credentials<AS:AccountStore>(
 #[cfg(test)]
 mod tests {
     use axum_test::TestServer;
+    use chrono::Utc;
     use secrecy::Secret;
 
     use crate::{
@@ -135,7 +138,11 @@ mod tests {
 
     /// Constructs a new [TestServer] using a fresh AccountService and FakeAccountStore.
     fn test_server() -> TestServer {
-        TestServer::new(router(AccountService::new(FakeAccountStore::new()))).unwrap()
+        TestServer::new(router(AccountService::new(
+            FakeAccountStore::new(),
+            Utc::now,
+        )))
+        .unwrap()
     }
 
     #[tokio::test]
