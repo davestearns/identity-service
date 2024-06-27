@@ -9,6 +9,7 @@ use axum::{
     Router,
 };
 use axum_prometheus::PrometheusMetricLayer;
+use chrono::Utc;
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
@@ -34,12 +35,12 @@ const SESSIONS_RESOURCE: &str = "/sessions";
 /// Application state that can be accessed by any route handler.
 /// Note that this doesn't need `#[derive(Clone)]` because we will
 /// put this into an [Arc] and [Arc] already supports [Clone].
-struct AppState<AS: AccountStore, C: Clock> {
+struct AppState<AS: AccountStore, C: Clock<Utc>> {
     account_service: AccountService<AS, C>,
 }
 
 /// Returns the Axum Router for the REST API
-pub fn router<AS: AccountStore, C: Clock>(account_service: AccountService<AS, C>) -> Router {
+pub fn router<AS: AccountStore, C: Clock<Utc>>(account_service: AccountService<AS, C>) -> Router {
     // wrap the AppState in an [Arc] since it will be shared between threads
     let shared_state = Arc::new(AppState { account_service });
 
@@ -67,7 +68,7 @@ async fn get_root() -> &'static str {
     ROOT_RESPONSE
 }
 
-async fn post_accounts<AS: AccountStore, C: Clock>(
+async fn post_accounts<AS: AccountStore, C: Clock<Utc>>(
     State(app_state): State<Arc<AppState<AS, C>>>,
     Json(new_account_request): Json<NewAccountRequest>,
 ) -> Result<(StatusCode, Json<AccountResponse>), ApiError> {
@@ -87,7 +88,7 @@ async fn post_accounts<AS: AccountStore, C: Clock>(
     Ok((StatusCode::CREATED, Json(account.into())))
 }
 
-async fn post_tokens<AS: AccountStore, C: Clock>(
+async fn post_tokens<AS: AccountStore, C: Clock<Utc>>(
     State(app_state): State<Arc<AppState<AS, C>>>,
     Json(account_credentials): Json<AuthenticateRequest>,
 ) -> Result<Json<AccountResponse>, ApiError> {
@@ -98,7 +99,7 @@ async fn post_tokens<AS: AccountStore, C: Clock>(
     Ok(Json(account.into()))
 }
 
-async fn put_credentials<AS: AccountStore, C: Clock>(
+async fn put_credentials<AS: AccountStore, C: Clock<Utc>>(
     State(app_state): State<Arc<AppState<AS, C>>>,
     Path(id): Path<String>,
     Json(update_credentials): Json<UpdateCredentialsRequest>,
@@ -143,7 +144,7 @@ mod tests {
     fn test_server() -> TestServer {
         TestServer::new(router(AccountService::new_with_clock(
             FakeAccountStore::new(),
-            SystemClock::new(),
+            SystemClock::default(),
         )))
         .unwrap()
     }

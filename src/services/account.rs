@@ -2,6 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
+use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials, Password};
@@ -20,12 +21,12 @@ pub mod stores;
 const BOGUS_ARGON2_HASH: &str =
     "$argon2id$v=19$m=16,t=2,p=1$ZlpXbUc0MUw5eVBBbmcxcQ$r79YwaBmNT2s6MplBZYgUw";
 
-pub struct AccountService<S: AccountStore, C: Clock> {
+pub struct AccountService<S: AccountStore, C: Clock<Utc>> {
     store: S,
     clock: C,
 }
 
-impl<S: AccountStore, C: Clock> AccountService<S, C> {
+impl<S: AccountStore, C: Clock<Utc>> AccountService<S, C> {
     /// Constructs a new [AccountService] given the [AccountStore] to use.
     pub fn new_with_clock(account_store: S, clock: C) -> Self {
         Self {
@@ -122,9 +123,9 @@ impl<S: AccountStore, C: Clock> AccountService<S, C> {
     }
 }
 
-impl<S: AccountStore> AccountService<S, SystemClock> {
+impl<S: AccountStore> AccountService<S, SystemClock<Utc>> {
     pub fn new(account_store: S) -> Self {
-        Self::new_with_clock(account_store, SystemClock::new())
+        Self::new_with_clock(account_store, SystemClock::default())
     }
 }
 
