@@ -15,7 +15,10 @@ use tracing::Level;
 
 use crate::{
     apis::models::{AccountResponse, NewAccountRequest},
-    services::{account::{stores::AccountStore, AccountService}, Clock},
+    services::{
+        account::{stores::AccountStore, AccountService},
+        Clock,
+    },
 };
 
 use super::{
@@ -114,12 +117,14 @@ async fn put_credentials<AS: AccountStore, C: Clock>(
 #[cfg(test)]
 mod tests {
     use axum_test::TestServer;
-    use chrono::Utc;
     use secrecy::Secret;
 
     use crate::{
         apis::models::{ApiErrorResponse, NewCredentialsRequest},
-        services::account::{models::Password, stores::fake::FakeAccountStore, AccountService},
+        services::{
+            account::{models::Password, stores::fake::FakeAccountStore, AccountService},
+            SystemClock,
+        },
     };
 
     use super::*;
@@ -138,7 +143,7 @@ mod tests {
     fn test_server() -> TestServer {
         TestServer::new(router(AccountService::new_with_clock(
             FakeAccountStore::new(),
-            Utc::now,
+            SystemClock::new(),
         )))
         .unwrap()
     }

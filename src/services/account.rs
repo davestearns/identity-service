@@ -2,7 +2,6 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
-use chrono::Utc;
 use error::AccountsServiceError;
 use id::ID;
 use models::{Account, AccountCredentials, NewAccount, NewAccountCredentials, Password};
@@ -11,7 +10,7 @@ use secrecy::{ExposeSecret, Secret};
 use stores::AccountStore;
 use validify::Validate;
 
-use super::Clock;
+use super::{Clock, SystemClock};
 
 pub mod error;
 pub mod id;
@@ -53,7 +52,7 @@ impl<S: AccountStore, C: Clock> AccountService<S, C> {
                 .display_name
                 .clone()
                 .map(|v| v.trim().to_string()),
-            created_at: (self.clock)(),
+            created_at: self.clock.now(),
         };
         self.store.insert(&account).await?;
         Ok(account)
@@ -123,16 +122,19 @@ impl<S: AccountStore, C: Clock> AccountService<S, C> {
     }
 }
 
-impl<S: AccountStore> AccountService<S, fn() -> chrono::DateTime<Utc>> {
+impl<S: AccountStore> AccountService<S, SystemClock> {
     pub fn new(account_store: S) -> Self {
-        Self::new_with_clock(account_store, Utc::now)
+        Self::new_with_clock(account_store, SystemClock::new())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use chrono::Utc;
     use models::Password;
     use stores::fake::FakeAccountStore;
+
+    use crate::services::TestClock;
 
     use super::*;
 
@@ -140,7 +142,8 @@ mod tests {
     async fn create_account() {
         let store = FakeAccountStore::new();
         let now = Utc::now();
-        let service = AccountService::new_with_clock(store, move || now);
+        let test_clock = TestClock::new(now);
+        let service = AccountService::new_with_clock(store, test_clock);
         let new_account = NewAccount {
             email: "test@test.com".to_string(),
             password: Secret::new(Password::new("test-password")),
