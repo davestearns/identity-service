@@ -51,11 +51,11 @@ impl<TZ: TimeZone + Send + Sync + 'static> TestClock<TZ> {
     }
 
     pub fn advance(&mut self, delta: TimeDelta) {
-        self.now = self.now.clone() + delta;
+        self.now += delta;
     }
 
     pub fn rewind(&mut self, delta: TimeDelta) {
-        self.now = self.now.clone() - delta;
+        self.now -= delta;
     }
 }
 
